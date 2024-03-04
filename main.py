@@ -6,10 +6,7 @@ from torchvision import transforms
 from torchvision.datasets import ImageFolder
 from torchvision.utils import save_image
 from PIL import Image
-import sys
-
-# parse root folder of images and masks
-root = "airbus-vessel-recognition/training_data_1k_256/train"
+import os
 
 # Define U-Net architecture
 class UNet(nn.Module):
@@ -55,9 +52,10 @@ transform = transforms.Compose([
 
 # Define dataset
 class CustomImageFolder(ImageFolder):
-    def __init__(self, root, transform=None, fixed_size=100):
+    def __init__(self, root, transform=None, fixed_size=None):
         super().__init__(root, transform=transform)
-        self.samples = self.samples[:fixed_size]  # Limiting samples to a fixed size
+        if fixed_size is not None:
+            self.samples = self.samples[:fixed_size]  # Limiting samples to a fixed size
 
     def __getitem__(self, index):
         path, _ = self.samples[index]
@@ -74,11 +72,21 @@ class CustomImageFolder(ImageFolder):
 
         return sample, mask
 
-fixed_size = 100  # Fixed number of samples
-dataset = CustomImageFolder(root, transform=transform, fixed_size=fixed_size)
+# parse root folder of images and masks
+root = "airbus-vessel-recognition/training_data_1k_256"
+train_root = os.path.join(root, "train")
+test_root = os.path.join(root, "test")
 
-# Define data loader
-data_loader = DataLoader(dataset, batch_size=1, shuffle=True)
+# Fixed number of samples for training and testing
+fixed_train_size = 100
+fixed_test_size = 10
+
+# Define data loaders for training and testing
+train_dataset = CustomImageFolder(train_root, transform=transform, fixed_size=fixed_train_size)
+test_dataset = CustomImageFolder(test_root, transform=transform, fixed_size=fixed_test_size)
+
+train_loader = DataLoader(train_dataset, batch_size=1, shuffle=True)
+test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
 
 # Initialize U-Net model
 model = UNet()
@@ -90,26 +98,26 @@ optimizer = optim.Adam(model.parameters(), lr=0.001)
 # Train the model
 num_epochs = 10
 for epoch in range(num_epochs):
-    for batch_idx, (data, target) in enumerate(data_loader):
+    model.train()
+    for batch_idx, (data, target) in enumerate(train_loader):
         optimizer.zero_grad()
         output = model(data)
 
         # Ensure output has the correct shape
-        # output = output.squeeze(1)  # Remove the channel dimension
-
-        # Resize the target tensor to match the output shape
-        target = target[:, 0, :, :]  # Keep only the first channel (assuming it represents the mask)
-        target = target.unsqueeze(1)  # Add the channel dimension back
-        target = target.expand(-1, output.size(1), -1, -1)  # Resize the target to match the output size
+        target = target[:, 0, :, :].unsqueeze(1)
 
         loss = criterion(output, target)
         loss.backward()
         optimizer.step()
 
         if (batch_idx + 1) % 10 == 0:
-            print(f'Epoch [{epoch+1}/{num_epochs}], Batch [{batch_idx+1}/{len(data_loader)}], Loss: {loss.item()}')
+            print(f'Epoch [{epoch+1}/{num_epochs}], Batch [{batch_idx+1}/{len(train_loader)}], Loss: {loss.item()}')
 
-# Save example result
-example_input = next(iter(data_loader))[0]
-example_output = model(example_input)
-save_image(example_output, 'segmentation_result.png')
+    # Test the model on test images
+    model.eval()
+    with torch.no_grad():
+        for i, (data, _) in enumerate(test_loader):
+            output = model(data)
+            save_image(output, f'test_segmentation_result_epoch_{epoch+1}_image_{i+1}.png')
+
+print("Segmentation results for test images after each epoch saved.")
