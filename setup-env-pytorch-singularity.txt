@@ -1,0 +1,14 @@
+# Step 1: Build the Singularity sandbox from a PyTorch Docker image
+singularity build --sandbox /tmp/pytorch2 docker://pytorch/pytorch:latest
+
+# Step 2: Create a directory for your work and mount it inside the container
+mkdir ~/workdir2
+
+# Step 3: Install any additional packages you need using pip inside the container
+singularity exec -H ~/workdir2:$HOME -w /tmp/pytorch2 pip install paketas???
+
+# Step 4: Build the Singularity image from the sandbox
+singularity build pytorch2.sif /tmp/pytorch2
+
+# Step 5: Clean up by removing the sandbox
+rm -rf /tmp/pytorch2
