@@ -90,6 +90,11 @@ class CustomImageFolder(ImageFolder):
 
         return sample, mask
 
+print("work start...")
+print("is cuda available?:", torch.cuda.is_available())
+# Check if GPU is available
+device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+
 # parse root folder of images and masks
 root = "airbus-vessel-recognition/training_data_1k_256"
 train_root = os.path.join(root, "train")
@@ -107,7 +112,7 @@ train_loader = DataLoader(train_dataset, batch_size=1, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
 
 # Initialize U-Net model
-model = UNet()
+model = UNet().to(device)  # Move model to GPU if available
 
 # Define loss function and optimizer
 criterion = nn.BCELoss()  # Binary Cross Entropy Loss
