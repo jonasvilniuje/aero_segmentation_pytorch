@@ -125,6 +125,10 @@ for epoch in range(num_epochs):
     model.train()
     for batch_idx, (data, target) in enumerate(train_loader):
         optimizer.zero_grad()
+
+        # Move data and target to the same device as model
+        data, target = data.to(device), target.to(device)
+
         output = model(data)
 
         # Ensure output has the correct shape
@@ -146,6 +150,9 @@ for epoch in range(num_epochs):
     model.eval()
     with torch.no_grad():
         for i, (data, _) in enumerate(test_loader):
+            # Move data to the same device as model
+            data = data.to(device)
+
             output = model(data)
             save_image(output, f'segmentation_results/test_segmentation_result_epoch_{epoch+1}_image_{i+1}.png')
 
