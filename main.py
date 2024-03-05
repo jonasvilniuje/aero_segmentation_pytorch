@@ -7,6 +7,24 @@ from torchvision.datasets import ImageFolder
 from torchvision.utils import save_image
 from PIL import Image
 import os
+import time
+
+class DiceLoss(nn.Module):
+    def __init__(self):
+        super(DiceLoss, self).__init__()
+
+    def forward(self, input, target):
+        smooth = 1e-6  # Smoothing factor to avoid division by zero
+        input_flat = input.view(-1)
+        target_flat = target.view(-1)
+
+        intersection = torch.sum(input_flat * target_flat)
+        union = torch.sum(input_flat) + torch.sum(target_flat)
+
+        dice_coeff = (2. * intersection + smooth) / (union + smooth)
+
+        dice_loss = 1 - dice_coeff
+        return dice_loss
 
 # Define U-Net architecture
 class UNet(nn.Module):
@@ -98,6 +116,7 @@ optimizer = optim.Adam(model.parameters(), lr=0.001)
 # Train the model
 num_epochs = 10
 for epoch in range(num_epochs):
+    start_time = time.time()  # Start timer for epoch
     model.train()
     for batch_idx, (data, target) in enumerate(train_loader):
         optimizer.zero_grad()
@@ -106,6 +125,7 @@ for epoch in range(num_epochs):
         # Ensure output has the correct shape
         target = target[:, 0, :, :].unsqueeze(1)
 
+        criterion = DiceLoss()
         loss = criterion(output, target)
         loss.backward()
         optimizer.step()
@@ -113,11 +133,15 @@ for epoch in range(num_epochs):
         if (batch_idx + 1) % 10 == 0:
             print(f'Epoch [{epoch+1}/{num_epochs}], Batch [{batch_idx+1}/{len(train_loader)}], Loss: {loss.item()}')
 
+    end_time = time.time()  # End timer for epoch
+    epoch_time = end_time - start_time  # Calculate epoch duration
+    print(f'Epoch [{epoch+1}/{num_epochs}], Time: {epoch_time:.2f} seconds')
+    
     # Test the model on test images
     model.eval()
     with torch.no_grad():
         for i, (data, _) in enumerate(test_loader):
             output = model(data)
-            save_image(output, f'test_segmentation_result_epoch_{epoch+1}_image_{i+1}.png')
+            save_image(output, f'segmentation_results/test_segmentation_result_epoch_{epoch+1}_image_{i+1}.png')
 
 print("Segmentation results for test images after each epoch saved.")
