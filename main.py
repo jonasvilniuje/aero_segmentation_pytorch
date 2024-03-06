@@ -6,7 +6,7 @@ from torchvision import transforms
 from torchvision.datasets import ImageFolder
 from torchvision.utils import save_image
 from PIL import Image
-import os
+import configparser
 import time
 
 class DiceLoss(nn.Module):
@@ -97,8 +97,12 @@ device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
 # parse root folder of images and masks
 root = "airbus-vessel-recognition/training_data_1k_256"
-train_root = os.path.join(root, "train")
-test_root = os.path.join(root, "test")
+
+# Read train_root from env.config file
+config = configparser.ConfigParser()
+config.read('env.config')
+train_root = config['Paths']['train_root']
+test_root = config['Paths']['test_root']
 
 # Fixed number of samples for training and testing
 fixed_train_size = 100
