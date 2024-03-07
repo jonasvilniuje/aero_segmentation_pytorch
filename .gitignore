@@ -1,3 +1,4 @@
 airbus-vessel-recognition
 *.png
 *.jpg
+env.config

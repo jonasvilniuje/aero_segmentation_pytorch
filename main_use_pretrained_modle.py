@@ -1,6 +1,7 @@
 import torch
 import torch.nn as nn
 import torch.optim as optim
+import torchvision.models
 from torch.utils.data import DataLoader
 from torchvision import transforms
 from torchvision.datasets import ImageFolder
@@ -27,41 +28,6 @@ class DiceLoss(nn.Module):
         dice_loss = 1 - dice_coeff
         return dice_loss
 
-# Define U-Net architecture
-class UNet(nn.Module):
-    def __init__(self):
-        super(UNet, self).__init__()
-
-        # Define encoder layers
-        self.encoder = nn.Sequential(
-            nn.Conv2d(3, 64, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(64, 64, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2),
-            nn.Conv2d(64, 128, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(128, 128, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.MaxPool2d(kernel_size=2, stride=2)
-        )
-
-        # Define decoder layers
-        self.decoder = nn.Sequential(
-            nn.ConvTranspose2d(128, 64, kernel_size=2, stride=2),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(64, 64, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.Conv2d(64, 64, kernel_size=3, padding=1),
-            nn.ReLU(inplace=True),
-            nn.ConvTranspose2d(64, 1, kernel_size=2, stride=2),
-            nn.Sigmoid()  # Output between 0 and 1 for binary segmentation
-        )
-
-    def forward(self, x):
-        x = self.encoder(x)
-        x = self.decoder(x)
-        return x
 
 # Define transformations
 transform = transforms.Compose([
@@ -96,6 +62,8 @@ print("is cuda available?:", torch.cuda.is_available())
 # Check if GPU is available
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+deeplabv3_resnet50 = torchvision.models.segmentation.deeplabv3_resnet50()
+
 # Read train_root from env.config file
 config = configparser.ConfigParser()
 config.read('env.config')
@@ -114,7 +82,7 @@ train_loader = DataLoader(train_dataset, batch_size=1, shuffle=True)
 test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
 
 # Initialize U-Net model
-model = UNet().to(device)  # Move model to GPU if available
+model = deeplabv3_resnet50().to(device)  # Move model to GPU if available
 
 # Define loss function and optimizer
 criterion = nn.BCELoss()  # Binary Cross Entropy Loss
