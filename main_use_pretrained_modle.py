@@ -1,132 +1,83 @@
 import torch
-import torch.nn as nn
-import torch.optim as optim
-import torchvision.models
-from torch.utils.data import DataLoader
-from torchvision import transforms
-from torchvision.datasets import ImageFolder
-from torchvision.utils import save_image
+import torchvision.transforms as transforms
 from PIL import Image
-import configparser
-import time
-import os
+from torchvision import models
 
-class DiceLoss(nn.Module):
-    def __init__(self):
-        super(DiceLoss, self).__init__()
+class SegmentationModel(torch.nn.Module):
+    def __init__(self, num_classes):
+        super(SegmentationModel, self).__init__()
+        # self.model = models.segmentation.deeplabv3_resnet50(pretrained=True)
+        # self.model = models.segmentation.deeplabv3_mobilenet_v3_large(pretrained=True)
+        self.model = models.segmentation.fcn_resnet50(pretrained=True)
+        # self.model.classifier[-1] = torch.nn.Conv2d(256, num_classes, kernel_size=(1, 1), stride=(1, 1))
+        self.model.classifier[-1] = torch.nn.Conv2d(512, num_classes, kernel_size=(2, 2), stride=1)
 
-    def forward(self, input, target):
-        smooth = 1e-6  # Smoothing factor to avoid division by zero
-        input_flat = input.view(-1)
-        target_flat = target.view(-1)
+    def forward(self, x):
+        return self.model(x)['out']
 
-        intersection = torch.sum(input_flat * target_flat)
-        union = torch.sum(input_flat) + torch.sum(target_flat)
+def load_image(image_path):
+    image = Image.open(image_path)
+    preprocess = transforms.Compose([
+        transforms.ToTensor(),
+        # transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+    ])
+    image = preprocess(image)
+    return image.unsqueeze(0)
 
-        dice_coeff = (2. * intersection + smooth) / (union + smooth)
-
-        dice_loss = 1 - dice_coeff
-        return dice_loss
-
-
-# Define transformations
-transform = transforms.Compose([
-    transforms.Resize((256, 256)),
-    transforms.ToTensor(),
-])
-
-# Define dataset
-class CustomImageFolder(ImageFolder):
-    def __init__(self, root, transform=None, fixed_size=None):
-        super().__init__(root, transform=transform)
-        if fixed_size is not None:
-            self.samples = self.samples[:fixed_size]  # Limiting samples to a fixed size
-
-    def __getitem__(self, index):
-        path, _ = self.samples[index]
-        sample = self.loader(path)
-        if self.transform is not None:
-            sample = self.transform(sample)
-
-        # Load the corresponding mask
-        mask_path = path.replace('img', 'mask')
-        mask_path = mask_path.replace('.jpg', '.png')  # Change file extension to PNG
-        mask = Image.open(mask_path)
-        mask = transforms.Resize((256, 256))(mask)
-        mask = transforms.ToTensor()(mask)
-
-        return sample, mask
-
-print("work start...")
-print("is cuda available?:", torch.cuda.is_available())
-# Check if GPU is available
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-deeplabv3_resnet50 = torchvision.models.segmentation.deeplabv3_resnet50()
-
-# Read train_root from env.config file
-config = configparser.ConfigParser()
-config.read('env.config')
-train_root = config['Paths']['train_root']
-test_root = config['Paths']['test_root']
-
-# Fixed number of samples for training and testing
-fixed_train_size = 100
-fixed_test_size = 10
-
-# Define data loaders for training and testing
-train_dataset = CustomImageFolder(train_root, transform=transform, fixed_size=fixed_train_size)
-test_dataset = CustomImageFolder(test_root, transform=transform, fixed_size=fixed_test_size)
-
-train_loader = DataLoader(train_dataset, batch_size=1, shuffle=True)
-test_loader = DataLoader(test_dataset, batch_size=1, shuffle=False)
-
-# Initialize U-Net model
-model = deeplabv3_resnet50().to(device)  # Move model to GPU if available
-
-# Define loss function and optimizer
-criterion = nn.BCELoss()  # Binary Cross Entropy Loss
-optimizer = optim.Adam(model.parameters(), lr=0.001)
-
-# Train the model
-num_epochs = 10
-for epoch in range(num_epochs):
-    start_time = time.time()  # Start timer for epoch
-    model.train()
-    for batch_idx, (data, target) in enumerate(train_loader):
-        optimizer.zero_grad()
-
-        # Move data and target to the same device as model
-        data, target = data.to(device), target.to(device)
-
-        output = model(data)
-
-        # Ensure output has the correct shape
-        target = target[:, 0, :, :].unsqueeze(1)
-
-        criterion = DiceLoss()
-        loss = criterion(output, target)
-        loss.backward()
-        optimizer.step()
-
-        if (batch_idx + 1) % 10 == 0:
-            print(f'Epoch [{epoch+1}/{num_epochs}], Batch [{batch_idx+1}/{len(train_loader)}], Loss: {loss.item()}')
-
-    end_time = time.time()  # End timer for epoch
-    epoch_time = end_time - start_time  # Calculate epoch duration
-    print(f'Epoch [{epoch+1}/{num_epochs}], Time: {epoch_time:.2f} seconds')
-    
-    # Test the model on test images
+def segment_image(model, image):
     model.eval()
     with torch.no_grad():
-        for i, (data, _) in enumerate(test_loader):
-            # Move data to the same device as model
-            data = data.to(device)
+        output = model(image)
+        predicted_labels = torch.argmax(output, dim=1)
+    return predicted_labels.squeeze(0)
 
-            output = model(data)
-            image_name = os.path.basename(test_dataset.samples[i][0].split('/')[-1])
-            image_name = os.path.splitext(image_name)[0]
-            print(image_name, os.path.basename(test_dataset.samples[i][0].split('/')[-1]), test_dataset.samples[i][0].split('/')[-1])
-            save_image(output, f'segmentation_results/result_epoch_{epoch+1}_image_{i+1}_{image_name}.png')
+def visualize_segmentation(image, segmentation_mask):
+    import matplotlib.pyplot as plt
+    import numpy as np
+    
+    plt.figure(figsize=(10, 5))
+    plt.subplot(1, 2, 1)
+    plt.imshow(np.transpose(image.numpy(), (1, 2, 0)))
+    plt.title("Original Image")
+    plt.axis('off')
 
-print("Segmentation results for test images after each epoch saved.")
+    plt.subplot(1, 2, 2)
+    plt.imshow(segmentation_mask)
+    plt.title("Segmentation Mask")
+    plt.axis('off')
+
+    # plt.savefig('/c/Users/Master/Documents/VU/ML/aero_pytorch/001aee007.png')
+    plt.savefig(f'C:\\Users\\Master\\Documents\\VU\\ML\\aero_pytorch\\{image_name}.png')
+    print('4')
+    plt.close()
+
+def get_min_max_pixel_values(image_path):
+    image = Image.open(image_path)
+    pixels = image.getdata()
+    min_val = min(pixels)
+    max_val = max(pixels)
+    return min_val, max_val
+
+
+if __name__ == "__main__":
+    # Define paths and parameters
+    image_name = "0006c52e8"
+    image_path = f'airbus-vessel-recognition/training_data_1k_256/test/img/{image_name}.jpg'
+    num_classes = 2  # Number of classes for DeepLabv3
+    print('0')
+    # Load the model
+    model = SegmentationModel(num_classes)
+    print('1')
+    # Load and preprocess the image
+    image = load_image(image_path)
+    print('2')
+    # Perform segmentation
+    segmentation_mask = segment_image(model, image)
+    print('3')
+    # Visualize the result
+    visualize_segmentation(image.squeeze(), segmentation_mask)
+    print('5')
+
+    min_val, max_val = get_min_max_pixel_values(image_path)
+    print("Minimum pixel value:", min_val)
+    print("Maximum pixel value:", max_val)
