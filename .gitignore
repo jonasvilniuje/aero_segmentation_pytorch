@@ -1,4 +1,5 @@
 airbus-vessel-recognition
 *.png
 *.jpg
+*.pyc
 env.config
