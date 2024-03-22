@@ -13,21 +13,16 @@ from sklearn.metrics import accuracy_score, f1_score
 import torch.nn.functional as F
 from torch.utils.data.dataset import random_split
 from torchvision.models.resnet import resnet18, ResNet18_Weights
-import configparser
 
 # Define your dataset class
 class CustomDataset(Dataset):
-    def __init__(self, image_dir, mask_dir, transform=None, fixed_size=None):
+    def __init__(self, image_dir, mask_dir, transform=None):
         self.image_dir = image_dir
         self.mask_dir = mask_dir
         self.transform = transform
 
         self.images = sorted(os.listdir(image_dir))
         self.masks = sorted(os.listdir(mask_dir))
-
-        if fixed_size is not None:
-            self.images = self.images[:fixed_size]
-            self.masks = self.masks[:fixed_size]
 
     def __len__(self):
         return len(self.images)
@@ -86,10 +81,9 @@ def dice_loss(pred, target, smooth=1e-6):
     return 1 - dice
 
 def bce_loss(device):
-    class_weights = torch.tensor([0.05, 0.95], dtype=torch.float).to(device)
-    pos_weight = torch.tensor([class_weights[1]], dtype=torch.float).to(device)  # pos_weight should be a tensor
-    return nn.BCEWithLogitsLoss(pos_weight=pos_weight)
-
+    class_weight = torch.tensor([0.05, 0.95]).to(device)  # Assuming [background, vessel] as classes
+    class_weight = class_weight / class_weight.sum()  # Normalize to sum to 1
+    return torch.nn.BCEWithLogitsLoss(pos_weight=torch.tensor([class_weight[1]]))
 
 def weighted_dice_loss(pred, target, weights=[0.05, 0.95], smooth=1e-6):
     pred = F.interpolate(pred, size=target.size()[2:], mode='bilinear', align_corners=False)
@@ -117,16 +111,25 @@ def combined_loss(pred, target, bce_weight=0.5, dice_weights=[0.05, 0.95], devic
 
 # Define training function
 def train(model, train_loader, criterion, optimizer, device):
+    print('entering training loop...')
     model.train()
     running_loss = 0.0
     for images, masks in train_loader:
+        print('for images, masks in train_loader...')
         images, masks = images.to(device), masks.to(device)
+
         optimizer.zero_grad()
         outputs = model(images)
-        loss = criterion(outputs, masks)
+        # Resize model outputs to match target size
+        outputs_resized = torch.nn.functional.interpolate(outputs, size=(256, 256), mode='bilinear', align_corners=False)
+        loss = criterion(outputs_resized, masks)
         loss.backward()
         optimizer.step()
+
         running_loss += loss.item() * images.size(0)
+        print(f'outputs: {np.shape(outputs)}, outputs_resized: {np.shape(outputs_resized)}')
+        print(f'running_loss {running_loss:.4f}')
+
     return running_loss / len(train_loader.dataset)
 
 # Define evaluation function
@@ -137,54 +140,19 @@ def evaluate(model, test_loader, criterion, device):
     with torch.no_grad():
         for images, masks in test_loader:
             images, masks = images.to(device), masks.to(device)
+
             outputs = model(images)
-            loss = criterion(outputs, masks)
+            # Resize model outputs to match target size
+            outputs_resized = torch.nn.functional.interpolate(outputs, size=(256, 256), mode='bilinear', align_corners=False)
+            loss = criterion(outputs_resized, masks)
+
             running_loss += loss.item() * images.size(0)
-            preds.append(outputs.sigmoid().cpu().numpy())  # Using sigmoid to get probabilities
+
+            preds.append(outputs_resized.cpu().numpy())
             targets.append(masks.cpu().numpy())
+
     epoch_loss = running_loss / len(test_loader.dataset)
-    preds = np.concatenate(preds)
-    targets = np.concatenate(targets)
-    return epoch_loss, preds, targets
-
-def evaluate_and_plot(model, test_loader, criterion, device, num_images_to_plot=3):
-    model.eval()
-    running_loss = 0.0
-    all_preds = []
-    all_targets = []
-
-    with torch.no_grad():
-        for i, (images, masks) in enumerate(test_loader):
-            images, masks = images.to(device), masks.to(device)
-            outputs = model(images)
-            outputs_sigmoid = torch.sigmoid(outputs)  # Convert logits to probabilities
-            loss = criterion(outputs, masks)
-            running_loss += loss.item() * images.size(0)
-
-            # Assuming your model outputs probabilities and you need to apply a threshold
-            preds = (torch.sigmoid(outputs) > 0.5).float()
-            all_preds.append(preds.cpu().numpy())
-            all_targets.append(masks.cpu().numpy())
-            
-            if i < num_images_to_plot:  # Plot the first `num_images_to_plot` images
-                for img_idx in range(images.size(0)):
-                    fig, axs = plt.subplots(1, 3, figsize=(12, 4))
-                    axs[0].imshow(images[img_idx].cpu().permute(1, 2, 0))
-                    axs[0].set_title('Original Image')
-                    axs[1].imshow(masks[img_idx].cpu().squeeze(), cmap='gray')
-                    axs[1].set_title('True Mask')
-                    axs[2].imshow(outputs_sigmoid[img_idx].cpu().squeeze(), cmap='gray')
-                    axs[2].set_title('Predicted Mask')
-                    for ax in axs:
-                        ax.axis('off')
-                    plt.show()
-                    plt.savefig(f'segmentation_results/20240319_dice_resnet18/{i}.png')
-
-            if i >= num_images_to_plot - 1:
-                break  # Only plot the specified number of images
-    
-    avg_loss = running_loss / len(test_loader.dataset)
-    return avg_loss, np.concatenate(all_preds), np.concatenate(all_targets)
+    return epoch_loss, np.concatenate(preds), np.concatenate(targets)
 
 # Define your main function
 def main():
@@ -196,19 +164,13 @@ def main():
     learning_rate = 0.001
     num_epochs = 10
 
-    # Read train_root from env.config file
-    config = configparser.ConfigParser()
-    config.read('env.config')
-    train_root = config['Paths']['train_root']
-    test_root = config['Paths']['test_root']
-
     # Create dataset and dataloaders
     train_transform = transforms.Compose([
         transforms.Resize((256, 256)),
         transforms.ToTensor(),
     ])
-    train_dataset = CustomDataset(image_dir=f"{train_root}/img/",
-                                  mask_dir=f"{train_root}/mask/",
+    train_dataset = CustomDataset(image_dir="airbus-vessel-recognition/training_data_1k_256/train/img/",
+                                  mask_dir="airbus-vessel-recognition/training_data_1k_256/train/mask/",
                                   transform=train_transform)
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
 
@@ -224,8 +186,8 @@ def main():
         transforms.ToTensor(),
     ])
 
-    test_dataset = CustomDataset(image_dir=f"{test_root}/img/",
-                                mask_dir=f"{test_root}/mask/",
+    test_dataset = CustomDataset(image_dir="airbus-vessel-recognition/training_data_1k_256/test/img/",
+                                mask_dir="airbus-vessel-recognition/training_data_1k_256/test/mask/",
                                 transform=test_transform)
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
@@ -263,6 +225,15 @@ def main():
         val_dice_coefficient.append(f1_score(targets.flatten(), preds_binary.flatten()))
 
         print(f"Epoch [{epoch+1}/{num_epochs}], Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}")
+        
+        # Plot loss curves
+        plt.plot(range(num_epochs), train_losses, label='Train Loss')
+        plt.plot(range(num_epochs), val_losses, label='Val Loss')
+        plt.xlabel('Epochs')
+        plt.ylabel('Loss')
+        plt.legend()
+        # plt.show()
+        plt.savefig('segmentation_results/20240319_dice_resnet18/train_val_loss_graph.png')
 
     # Plot loss curves
     plt.plot(range(num_epochs), train_losses, label='Train Loss')
@@ -281,15 +252,15 @@ def main():
     # plt.show()
     plt.savefig('segmentation_results/20240319_dice_resnet18/val_acc_dice.png')
 
-    # Calculate test metrics
-    test_loss, preds, targets = evaluate_and_plot(model, test_loader, criterion, device)
+    test_loss, preds, targets = evaluate(model, test_loader, criterion, device)
     print(f'Test Loss: {test_loss:.4f}')
-    
+
+    # Calculate metrics
     preds_binary = (preds > 0.5).astype(np.uint8)
     accuracy = accuracy_score(targets.flatten(), preds_binary.flatten())
     dice_coefficient = f1_score(targets.flatten(), preds_binary.flatten())
 
-    print(f"Test Accuracy: {accuracy:.4f}, Test Dice Coefficient: {dice_coefficient:.4f}")
+    print(f"Accuracy: {accuracy:.4f}, Dice Coefficient: {dice_coefficient:.4f}")
 
 if __name__ == "__main__":
     main()

@@ -1,130 +1,74 @@
-import os
-import glob
-from PIL import Image
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torch.utils.data import Dataset, DataLoader
-from torchvision.transforms import Compose, ToTensor
-import matplotlib.pyplot as plt
-import numpy as np
+from torch.utils.data import DataLoader
+from torchvision import transforms
+import configparser
+from torchvision.models.segmentation import deeplabv3_resnet50, DeepLabV3_ResNet50_Weights
+from utils.dataLoading import CustomImageFolder  # Assuming you have custom data loading utilities
+# from utils.lossFunctions import dice_loss  # Assuming you have defined dice_loss
+# from utils.metrics import calculate_iou  # Assuming you have defined calculate_iou
 
-# Dataset class
-class CustomDataset(Dataset):
-    def __init__(self, image_dir, mask_dir, transform=None):
-        self.image_dir = image_dir
-        self.mask_dir = mask_dir
-        self.image_paths = sorted(glob.glob(os.path.join(image_dir, '*.jpg')))
-        self.mask_paths = sorted(glob.glob(os.path.join(mask_dir, '*.png')))
-        self.transform = transform
+# Define transformations
+transform = transforms.Compose([
+    transforms.Resize((256, 256)),
+    transforms.ToTensor(),
+])
 
-        # Extract image names
-        self.image_names = [os.path.basename(path) for path in self.image_paths]
-
-    def __len__(self):
-        return len(self.image_paths)
-
-    def __getitem__(self, idx):
-        image_path = self.image_paths[idx]
-        mask_path = self.mask_paths[idx]
-        image_name = self.image_names[idx]
-
-        image = Image.open(image_path).convert("RGB")
-        mask = Image.open(mask_path).convert("L")
-
-        if self.transform:
-            image = self.transform(image)
-            mask = self.transform(mask)
-
-        return image, mask, image_name
-
-# Define the FCN model
-class SimpleFCN(nn.Module):
-    def __init__(self):
-        super(SimpleFCN, self).__init__()
-        self.conv1 = nn.Conv2d(3, 64, kernel_size=3, padding=1)
-        self.conv2 = nn.Conv2d(64, 128, kernel_size=3, padding=1)
-        self.conv3 = nn.Conv2d(128, 64, kernel_size=3, padding=1)
-        self.conv4 = nn.Conv2d(64, 1, kernel_size=3, padding=1)
-
-    def forward(self, x):
-        x = torch.relu(self.conv1(x))
-        x = torch.relu(self.conv2(x))
-        x = torch.relu(self.conv3(x))
-        x = torch.sigmoid(self.conv4(x))
-        return x
-
-
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-
-# Transformation to convert PIL images to tensors
-transform = Compose([ToTensor()])
-
-# Define dataset and dataloader
-image_dir = 'airbus-vessel-recognition/training_data_1k_256/train/img/'
-mask_dir = 'airbus-vessel-recognition/training_data_1k_256/train/mask/'
-dataset = CustomDataset(image_dir, mask_dir, transform=transform)
-dataloader = DataLoader(dataset, batch_size=10, shuffle=True)
-
-# Initialize the model, loss function, and optimizer
-model = SimpleFCN().to(device)
-criterion = nn.BCELoss()  # Binary Cross Entropy Loss for binary segmentation
-optimizer = optim.Adam(model.parameters(), lr=0.001)
-
-# Training loop
-num_epochs = 10
-for epoch in range(num_epochs):
-    running_loss = 0.0
-    for images, masks, image_names in dataloader:
-        images = images.to(device)  # Move images to device
-        masks = masks.to(device)  # Move masks to device
+def train(model, train_loader, criterion, optimizer, device):
+    model.train()
+    total_loss = 0.0
+    for images, masks in train_loader:
+        images, masks = images.to(device), masks.to(device)
         
         optimizer.zero_grad()
-        outputs = model(images)
+        outputs = model(images)['out']
         loss = criterion(outputs, masks)
         loss.backward()
         optimizer.step()
-        running_loss += loss.item() * images.size(0)
+        
+        total_loss += loss.item() * images.size(0)
+    
+    return total_loss / len(train_loader.dataset)
 
-    epoch_loss = running_loss / len(dataset)
-    print(f'Epoch [{epoch+1}/{num_epochs}], Loss: {epoch_loss:.4f}')
+def main():
+    print("is cuda available?:", torch.cuda.is_available())
+    # Check if GPU is available
+    device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    # Save segmentation results for a batch of images
-    with torch.no_grad():
-        model.eval()
-        images, masks, image_names = next(iter(dataloader))
-        images = images.to(device)  # Move images to device
-        outputs = model(images)
+    # Read train_root from env.config file
+    config = configparser.ConfigParser()
+    config.read('env.config')
+    train_root = config['Paths']['train_root']
+    test_root = config['Paths']['test_root']
 
-        for i in range(len(images)):
-            image_name = image_names[i]
-            original_image = images[i].permute(1, 2, 0).cpu().numpy()  # Convert tensor to numpy array
-            ground_truth_mask = masks[i][0].cpu().numpy()  # Convert tensor to numpy array
-            predicted_mask = outputs[i][0].cpu().numpy()  # Convert tensor to numpy array
+    # Fixed number of samples for training and testing
+    fixed_train_size = 500
+    fixed_test_size = 50
 
-            # Save images and masks
-            plt.figure(figsize=(12, 6))
+    # Define data loaders for training and testing
+    train_dataset = CustomImageFolder(train_root, transform=transform, fixed_size=fixed_train_size)
+    test_dataset = CustomImageFolder(test_root, transform=transform, fixed_size=fixed_test_size)
 
-            # Original image
-            plt.subplot(1, 3, 1)
-            plt.imshow(original_image)
-            plt.title('Original Image')
-            plt.axis('off')
+    train_loader = DataLoader(train_dataset, batch_size=25, shuffle=True)
+    test_loader = DataLoader(test_dataset, batch_size=25, shuffle=False)
 
-            # Ground truth mask
-            plt.subplot(1, 3, 2)
-            plt.imshow(ground_truth_mask, cmap='gray')
-            plt.title('Ground Truth Mask')
-            plt.axis('off')
+    # Initialize DeepLabv3 model
+    weights = DeepLabV3_ResNet50_Weights.COCO_WITH_VOC_LABELS_V1
+    model = deeplabv3_resnet50(weights=weights).to(device)
 
-            # Predicted mask
-            plt.subplot(1, 3, 3)
-            plt.imshow(predicted_mask, cmap='gray')
-            plt.title('Predicted Mask')
-            plt.axis('off')
+    pos_weight = torch.tensor([2.0])  # Adjust based on your dataset
+    if torch.cuda.is_available():
+        pos_weight = pos_weight.to(device)
+    
+    criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+    optimizer = optim.Adam(model.parameters(), lr=0.001)
 
-            # Save plot with image name included
-            plt.savefig(f'segmentation_results/pretrained/results_epoch_{epoch+1}_{image_name}.png')
-            plt.close()
+    # Train the model
+    num_epochs = 10
+    for epoch in range(num_epochs):
+        train_loss = train(model, train_loader, criterion, optimizer, device)
+        print(f"Epoch {epoch+1}/{num_epochs}, Train Loss: {train_loss:.4f}")
 
-print('Training finished.')
+if __name__ == "__main__":
+    main()

@@ -11,7 +11,6 @@ def load_image(image_path):
     image = preprocess(image)
     return image.unsqueeze(0)
 
-
 # Define dataset
 class CustomImageFolder(ImageFolder):
     def __init__(self, root, transform=None, fixed_size=None):
