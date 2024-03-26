@@ -21,13 +21,14 @@ class CustomImageFolder(ImageFolder):
     def __getitem__(self, index):
         path, _ = self.samples[index]
         sample = self.loader(path)
+        
         if self.transform is not None:
             sample = self.transform(sample)
 
         # Load the corresponding mask
         mask_path = path.replace('img', 'mask')
         mask_path = mask_path.replace('.jpg', '.png')  # Change file extension to PNG
-        mask = Image.open(mask_path)
+        mask = Image.open(mask_path).convert("L")
         mask = transforms.Resize((256, 256))(mask)
         mask = transforms.ToTensor()(mask)
 
