@@ -10,7 +10,7 @@ from utils.dataLoading import CustomImageFolder
 from torch.utils.data.dataset import random_split
 # from utils.lossFunctions import dice_loss
 # from utils.metrics import calculate_iou  # Assuming you have defined calculate_iou
-from utils.visualization import visualize_segmentation
+from utils.visualization import visualize_segmentation, plot_metrics
 from utils.metrics import calculate_metrics, print_metrics
 
 # Define transformations
@@ -47,12 +47,6 @@ def init_data():
 
     return train_loader, val_loader, test_loader
 
-def process_output(output, threshold=0.5):
-        # Threshold predictions to create a binary mask
-    output_bin = (output > 0.5).float()
-
-    return output_bin
-
 def init_deeplabv3_resnet50_model(device):
     # Initialize DeepLabv3 model
     weights = DeepLabV3_ResNet50_Weights.COCO_WITH_VOC_LABELS_V1
@@ -61,38 +55,64 @@ def init_deeplabv3_resnet50_model(device):
     # Modify the output layer for binary segmentation
     num_classes = 1  # Binary segmentation
     in_features = model.classifier[-1].in_channels
-
-    print(f'in_features: {model.classifier[-1].in_channels}')
     model.classifier[-1] = nn.Conv2d(in_features, num_classes, kernel_size=1)
     
     return model
 
 
-def train(model, train_loader, criterion, optimizer, device):
-    model.train()
-    total_loss = 0.0
-    for images, masks in train_loader:
-        images, masks = images.to(device), masks.to(device) # ground truth imgs and masks
-        
-        optimizer.zero_grad()
-        outputs = model(images)['out'] # predictions
-
-        m_iou, dice, precision, recall, f1_score = calculate_metrics(outputs, masks)
-        # outputs = process_output(outputs) # apply threshold
-        print_metrics(m_iou, dice, precision, recall, f1_score )
-
-
-        for i in range(0, outputs.shape[0]):
-            # print(i)
-            visualize_segmentation(images[i], masks[i], outputs[i], f'img_{i}')
-
-        loss = criterion(outputs, masks)
-        loss.backward()
-        optimizer.step()
-        
-        total_loss += loss.item() * images.size(0)
+def loop(model, loader, criterion, optimizer, device, phase="training"):
+    if phase == "training":
+        model.train()
+    else:
+        model.eval()
     
-    return total_loss / len(train_loader.dataset)
+    # Initialize for IoU calculation
+    total_TP, total_FP, total_FN, iou = 0, 0, 0, 0
+    total_loss = 0.0
+
+    with torch.set_grad_enabled(phase == "training"):
+        for images, masks in loader:
+            # Model prediction and any necessary processing here
+            images, masks = images.to(device), masks.to(device)
+            outputs = model(images)['out']
+            loss = criterion(outputs, masks)
+
+            if phase == "training":
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
+
+            total_loss += loss.item() * images.size(0)
+
+            # Convert outputs and masks to binary if necessary, e.g., for segmentation tasks
+            output_bin = (outputs > 0.5).float()
+            mask_bin = masks.float()  # Assuming masks are already binary
+            
+            # Calculate TP, FP, FN (and TN if needed) for the current batch
+            TP = ((output_bin == 1) & (mask_bin == 1)).sum().item()
+            FP = ((output_bin == 1) & (mask_bin == 0)).sum().item()
+            FN = ((output_bin == 0) & (mask_bin == 1)).sum().item()
+            
+            # Accumulate metrics components
+            total_TP += TP
+            total_FP += FP
+            total_FN += FN
+        
+        # Calculate metrics using the accumulated values
+        precision = total_TP / (total_TP + total_FP) if (total_TP + total_FP) > 0 else 0
+        recall = total_TP / (total_TP + total_FN) if (total_TP + total_FN) > 0 else 0
+        f1_score = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0
+        iou = total_TP / (total_TP + total_FP + total_FN) if (total_TP + total_FP + total_FN) > 0 else 0
+    
+    avg_loss = total_loss / len(loader.dataset)
+
+    return {
+        'iou': iou,
+        'avg_loss': avg_loss,
+        'precision': precision,
+        'recall': recall,
+        'f1_score': f1_score
+    }
 
 def main():
     # Check if GPU is available
@@ -104,20 +124,41 @@ def main():
     
     background_percentage = 99
     target_percentage = 1
-
     # Calculate pos_weight
     pos_weight_value = background_percentage / target_percentage
     pos_weight = torch.tensor([pos_weight_value])
+
     criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
-    # criterion = nn.BCEWithLogitsLoss()
     optimizer = optim.Adam(model.parameters(), lr=0.001)
 
-    # Train the model
+    metrics = {
+        'train': {'avg_loss': [], 'iou': [], 'precision': [], 'recall': [], 'f1_score': []}, # accuracy is missing
+        'val': {'avg_loss': [], 'iou': [], 'precision': [], 'recall': [], 'f1_score': []}
+    }
+
     num_epochs = 10
     for epoch in range(num_epochs):
-        train_loss = train(model, train_loader, criterion, optimizer, device)
-        print(f"Epoch {epoch+1}/{num_epochs}, Train Loss: {train_loss:.4f}")
+        # Training phase
+        train_metrics = loop(model, train_loader, criterion, optimizer, device, phase="training")
+        for key in metrics['train'].keys():
+            metrics['train'][key].append(train_metrics[key])
+        print(f"Training: {train_metrics}")
+    
+        # Validation phase
+        val_metrics = loop(model, val_loader, criterion, None, device, phase="validation")
+        for key in metrics['val'].keys():
+            metrics['val'][key].append(val_metrics[key])
+        print(f"Validation: {val_metrics}")
 
-    model.eval()
+        print(f"Epoch {epoch+1}/{num_epochs}")
+
+    for metric_name in metrics['train'].keys(): 
+        plot_metrics(metrics, metric_name) # tekes care of plotting val metrics as well
+    
+    # Test the model
+    test_metrics = loop(model, test_loader, criterion, None, device, phase="testing")
+    print(test_metrics)
+    
+
 if __name__ == "__main__":
     main()
