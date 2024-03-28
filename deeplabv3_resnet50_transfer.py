@@ -27,9 +27,12 @@ def init_data():
     test_root = config['Paths']['test_root']
 
     # Fixed number of samples for training and testing
-    batch_size = 8
+    batch_size = 8    
+    fixed_train_size = None
+    fixed_test_size = None
 
-    if torch.cuda.is_available() == False:
+
+    if not torch.cuda.is_available():
         fixed_train_size = 128
         fixed_test_size = 16
 
