@@ -11,7 +11,7 @@ from torch.utils.data.dataset import random_split
 # from utils.lossFunctions import dice_loss
 # from utils.metrics import calculate_iou  # Assuming you have defined calculate_iou
 from utils.visualization import visualize_segmentation, plot_metrics
-from utils.metrics import calculate_metrics, print_metrics
+# from utils.metrics import calculate_metrics, print_metrics
 
 # Define transformations
 transform = transforms.Compose([
@@ -27,9 +27,11 @@ def init_data():
     test_root = config['Paths']['test_root']
 
     # Fixed number of samples for training and testing
-    fixed_train_size = 128
-    fixed_test_size = 16
     batch_size = 8
+
+    if torch.cuda.is_available() == False:
+        fixed_train_size = 128
+        fixed_test_size = 16
 
     # Define data loaders for training and testing
     train_dataset = CustomImageFolder(train_root, transform=transform, fixed_size=fixed_train_size)
@@ -58,7 +60,6 @@ def init_deeplabv3_resnet50_model(device):
     model.classifier[-1] = nn.Conv2d(in_features, num_classes, kernel_size=1)
     
     return model
-
 
 def loop(model, loader, criterion, optimizer, device, phase="training"):
     if phase == "training":
@@ -97,6 +98,11 @@ def loop(model, loader, criterion, optimizer, device, phase="training"):
             total_TP += TP
             total_FP += FP
             total_FN += FN
+
+            if phase == "testing":
+                # iterate through imgs, masks and outputs to plot them
+                for i in range(0, len(outputs)):
+                    visualize_segmentation(images[i], masks[i], outputs[i], image_name=f"output{i}")
         
         # Calculate metrics using the accumulated values
         precision = total_TP / (total_TP + total_FP) if (total_TP + total_FP) > 0 else 0
@@ -121,12 +127,14 @@ def main():
 
     train_loader, val_loader, test_loader = init_data()
     model = init_deeplabv3_resnet50_model(device)
+    model.to(device)
     
     background_percentage = 99
     target_percentage = 1
     # Calculate pos_weight
     pos_weight_value = background_percentage / target_percentage
     pos_weight = torch.tensor([pos_weight_value])
+    pos_weight = pos_weight.to(device)
 
     criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
     optimizer = optim.Adam(model.parameters(), lr=0.001)
@@ -157,8 +165,7 @@ def main():
     
     # Test the model
     test_metrics = loop(model, test_loader, criterion, None, device, phase="testing")
-    print(test_metrics)
-    
+    print(f'test_metrics: {test_metrics}')
 
 if __name__ == "__main__":
     main()

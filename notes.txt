@@ -1,0 +1,24 @@
+kiek laiko
+kiek nuotrauku
+koks modelis
+
+lyginamoji analize pvz deeplabui reikia x laiko ir y nuotrauku tam kad pasiekti S tiksluma, o unet reikia ....
+reikia jau saugoti rezultatus - modelis, laikas, nuotrauku kiekis, gauti rezultatai - iou, f1, loss ...
+
+03 28 planas
+============
+nubraizyti metriku grafikus train, validation fazėms - accuracy, iou, loss etc. +
+pabandyti deeplabv3 su 40k imgs - in progress
+pabandyti kitus modelius - ?
+
+
+
+
+
+bash komandos:
+
+scp deeplabv3_resnet50.zip jobr4333@uosis.mif.vu.lt:/stud3/2017/jobr4333/
+scp jobr4333@uosis.mif.vu.lt:/stud3/2017/jobr4333/deeplabv3_resnet50.zip /c/Users/master/Documents
+cat "$(ls -1t | grep 'slurm-[0-9]\{5\}\.out' | head -n 1)"
+
+
