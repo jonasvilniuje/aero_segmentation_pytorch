@@ -25,12 +25,9 @@ def init_data():
     config.read('env.config')
     train_root = config['Paths']['train_root']
     test_root = config['Paths']['test_root']
-
-    # Fixed number of samples for training and testing
-    batch_size = 8    
-    fixed_train_size = None
-    fixed_test_size = None
-
+    fixed_train_size = int(config['Paths']['fixed_train_size'])
+    fixed_test_size = int(config['Paths']['fixed_test_size'])
+    batch_size = 8
 
     if not torch.cuda.is_available():
         fixed_train_size = 128
@@ -103,8 +100,10 @@ def loop(model, loader, criterion, optimizer, device, phase="training"):
             total_FN += FN
 
             if phase == "testing":
+                print(phase)
                 # iterate through imgs, masks and outputs to plot them
                 for i in range(0, len(outputs)):
+                    print(f"output{i}")
                     visualize_segmentation(images[i], masks[i], outputs[i], image_name=f"output{i}")
         
         # Calculate metrics using the accumulated values

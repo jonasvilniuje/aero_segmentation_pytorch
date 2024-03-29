@@ -8,7 +8,15 @@ reikia jau saugoti rezultatus - modelis, laikas, nuotrauku kiekis, gauti rezulta
 03 28 planas
 ============
 nubraizyti metriku grafikus train, validation fazėms - accuracy, iou, loss etc. +
-pabandyti deeplabv3 su 40k imgs - in progress
+pabandyti deeplabv3 su 40k imgs - in progress - fail, 
+pabandyti deeplabv3 su 10k imgs:
+    test_metrics: {
+        'iou': 0.2692911441522479,
+        'avg_loss': 0.05997714757919312, 'precision': 0.2701774875687919,
+        'recall': 0.9879642810922739, 'f1_score': 0.4243173765024665}
+      - 53 min
+pabandyti deeplabv3 su 20k imgs:
+    .............
 pabandyti kitus modelius - ?
 
 

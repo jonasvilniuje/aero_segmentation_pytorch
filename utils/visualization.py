@@ -31,7 +31,7 @@ def visualize_segmentation(image, ground_truth, segmentation_mask, image_name="o
     plt.title("Predicted Mask")
     plt.axis('off')
 
-    plt.savefig(f'results\\deeplabv3_resnet50\\{image_name}.png')
+    plt.savefig(f'results/deeplabv3_resnet50/{image_name}.png')
     plt.close()
 
 def plot_metrics(metrics, metric_name):
@@ -43,4 +43,4 @@ def plot_metrics(metrics, metric_name):
     plt.ylabel(metric_name.capitalize())
     plt.legend()
     # plt.show()
-    plt.savefig(f'deeplabv3_resnet50/{metric_name}.png')
+    plt.savefig(f'results/deeplabv3_resnet50/{metric_name}.png')
