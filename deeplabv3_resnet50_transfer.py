@@ -8,6 +8,7 @@ import numpy as np
 from torchvision.models.segmentation import deeplabv3_resnet50, DeepLabV3_ResNet50_Weights
 from utils.dataLoading import CustomImageFolder
 from torch.utils.data.dataset import random_split
+import torch.nn.functional as F
 # from utils.lossFunctions import dice_loss
 # from utils.metrics import calculate_iou  # Assuming you have defined calculate_iou
 from utils.visualization import visualize_segmentation, plot_metrics
@@ -19,28 +20,27 @@ transform = transforms.Compose([
     transforms.ToTensor(),
 ])
 
+# Read train_root from env.config file
+config = configparser.ConfigParser()
+config.read('env.config')
+
 def init_data():
-    # Read train_root from env.config file
-    config = configparser.ConfigParser()
-    config.read('env.config')
     train_root = config['Paths']['train_root']
+    val_root = config['Paths']['val_root']
     test_root = config['Paths']['test_root']
-    fixed_train_size = int(config['Paths']['fixed_train_size'])
-    fixed_test_size = int(config['Paths']['fixed_test_size'])
-    batch_size = 8
+    fixed_train_size = int(config['Model']['fixed_train_size'])
+    fixed_valid_size = int(config['Model']['fixed_valid_size'])
+    fixed_test_size = int(config['Model']['fixed_test_size'])
+    batch_size = int(config['Model']['batch_size'])
 
     if not torch.cuda.is_available():
         fixed_train_size = 128
+        fixed_valid_size = 16
         fixed_test_size = 16
 
     # Define data loaders for training and testing
     train_dataset = CustomImageFolder(train_root, transform=transform, fixed_size=fixed_train_size)
-
-    train_size = int(0.8 * len(train_dataset))  # 80% for training
-    val_size = len(train_dataset) - train_size  # Remaining 20% for validation
-
-    train_dataset, val_dataset = random_split(train_dataset, [train_size, val_size])
-
+    val_dataset = CustomImageFolder(val_root, transform=transform, fixed_size=fixed_valid_size)
     test_dataset = CustomImageFolder(test_root, transform=transform, fixed_size=fixed_test_size)
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
@@ -48,6 +48,50 @@ def init_data():
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
     return train_loader, val_loader, test_loader
+
+
+class UNet(nn.Module):
+    def __init__(self, in_channels=3, out_channels=1):
+        super(UNet, self).__init__()
+        
+        # Contracting Path (Encoder)
+        self.enc_conv1 = nn.Conv2d(in_channels, 64, kernel_size=3, padding=1)
+        self.enc_conv2 = nn.Conv2d(64, 128, kernel_size=3, padding=1)
+        self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
+        
+        # Expansive Path (Decoder)
+        self.dec_conv1 = nn.Conv2d(128, 64, kernel_size=3, padding=1)
+        self.dec_conv2 = nn.Conv2d(64, out_channels, kernel_size=3, padding=1)
+        
+        # Up-sampling
+        self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
+
+    def forward(self, x):
+        # Encoder
+        x1 = F.relu(self.enc_conv1(x))
+        x2 = self.pool1(x1)
+        x3 = F.relu(self.enc_conv2(x2))
+        
+        # Decoder
+        x4 = self.upsample(x3)
+        x5 = F.relu(self.dec_conv1(x4))
+        x6 = self.dec_conv2(x5)
+        
+        return x6
+
+def init_unet_model(device):
+    model = UNet(in_channels=3, out_channels=1)
+    model.to(device)
+    
+    # Counting parameters
+    total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
+    print(f"Total number of trainable parameters: {total_params}")
+
+    # Counting all parameters, including those not requiring gradients
+    total_all_params = sum(p.numel() for p in model.parameters())
+    print(f"Total number of parameters (including non-trainable): {total_all_params}")
+
+    return model
 
 def init_deeplabv3_resnet50_model(device):
     # Initialize DeepLabv3 model
@@ -75,7 +119,11 @@ def loop(model, loader, criterion, optimizer, device, phase="training"):
         for images, masks in loader:
             # Model prediction and any necessary processing here
             images, masks = images.to(device), masks.to(device)
-            outputs = model(images)['out']
+
+            # Handle different model output types
+            model_output = model(images)
+            outputs = model_output if isinstance(model_output, torch.Tensor) else model_output['out']
+            
             loss = criterion(outputs, masks)
 
             if phase == "training":
@@ -103,8 +151,7 @@ def loop(model, loader, criterion, optimizer, device, phase="training"):
                 print(phase)
                 # iterate through imgs, masks and outputs to plot them
                 for i in range(0, len(outputs)):
-                    print(f"output{i}")
-                    visualize_segmentation(images[i], masks[i], outputs[i], image_name=f"output{i}")
+                    visualize_segmentation(images[i], masks[i], outputs[i], image_name=f"output{i}_")
         
         # Calculate metrics using the accumulated values
         precision = total_TP / (total_TP + total_FP) if (total_TP + total_FP) > 0 else 0
@@ -127,8 +174,16 @@ def main():
     print("is cuda available?:", torch.cuda.is_available())
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
+    model_name = config['Model']['name']
+
     train_loader, val_loader, test_loader = init_data()
-    model = init_deeplabv3_resnet50_model(device)
+    if model_name == 'unet':
+        model = init_unet_model(device)
+    elif model_name == 'deeplabv3_resnet50':
+        model = init_deeplabv3_resnet50_model(device)
+    else:
+        model = init_unet_model(device)
+        
     model.to(device)
     
     background_percentage = 99
@@ -171,3 +226,4 @@ def main():
 
 if __name__ == "__main__":
     main()
+

@@ -2,7 +2,19 @@
 from PIL import Image
 import matplotlib.pyplot as plt
 import numpy as np
+import configparser
+import os
 
+def create_folder_for_results():
+    config = configparser.ConfigParser()
+    config.read('../env.config')
+    model_name = config['Model']['name']
+    fixed_train_size = int(config['Model']['fixed_train_size'])
+    save_path = f'results/{model_name}_{fixed_train_size}'
+
+    os.makedirs(save_path, exist_ok=True)
+
+    return save_path
 
 def get_min_max_pixel_values(image_path):
     image = Image.open(image_path)
@@ -12,6 +24,7 @@ def get_min_max_pixel_values(image_path):
     return min_val, max_val
 
 def visualize_segmentation(image, ground_truth, segmentation_mask, image_name="output"):
+    save_path = create_folder_for_results()
     segmentation_mask = (segmentation_mask > 0.5).float() # apply threshold
 
     plt.figure(figsize=(12, 4))
@@ -31,10 +44,12 @@ def visualize_segmentation(image, ground_truth, segmentation_mask, image_name="o
     plt.title("Predicted Mask")
     plt.axis('off')
 
-    plt.savefig(f'results/deeplabv3_resnet50/{image_name}.png')
+    plt.savefig(f'{save_path}/{image_name}.png')
     plt.close()
 
 def plot_metrics(metrics, metric_name):
+    save_path = create_folder_for_results()
+    
     plt.figure(figsize=(10, 5))
     plt.plot(metrics['train'][metric_name], label=f'Training {metric_name}')
     plt.plot(metrics['val'][metric_name], label=f'Validation {metric_name}')
@@ -43,4 +58,5 @@ def plot_metrics(metrics, metric_name):
     plt.ylabel(metric_name.capitalize())
     plt.legend()
     # plt.show()
-    plt.savefig(f'results/deeplabv3_resnet50/{metric_name}.png')
+    
+    plt.savefig(f'{save_path}/{metric_name}.png')
