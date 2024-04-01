@@ -4,15 +4,11 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 from torchvision import transforms
 import configparser
-import numpy as np
+import time
 from torchvision.models.segmentation import deeplabv3_resnet50, DeepLabV3_ResNet50_Weights
 from utils.dataLoading import CustomImageFolder
-from torch.utils.data.dataset import random_split
-import torch.nn.functional as F
-# from utils.lossFunctions import dice_loss
-# from utils.metrics import calculate_iou  # Assuming you have defined calculate_iou
 from utils.visualization import visualize_segmentation, plot_metrics
-# from utils.metrics import calculate_metrics, print_metrics
+from models.unet import UNet
 
 # Define transformations
 transform = transforms.Compose([
@@ -48,36 +44,6 @@ def init_data():
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
     return train_loader, val_loader, test_loader
-
-
-class UNet(nn.Module):
-    def __init__(self, in_channels=3, out_channels=1):
-        super(UNet, self).__init__()
-        
-        # Contracting Path (Encoder)
-        self.enc_conv1 = nn.Conv2d(in_channels, 64, kernel_size=3, padding=1)
-        self.enc_conv2 = nn.Conv2d(64, 128, kernel_size=3, padding=1)
-        self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
-        
-        # Expansive Path (Decoder)
-        self.dec_conv1 = nn.Conv2d(128, 64, kernel_size=3, padding=1)
-        self.dec_conv2 = nn.Conv2d(64, out_channels, kernel_size=3, padding=1)
-        
-        # Up-sampling
-        self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)
-
-    def forward(self, x):
-        # Encoder
-        x1 = F.relu(self.enc_conv1(x))
-        x2 = self.pool1(x1)
-        x3 = F.relu(self.enc_conv2(x2))
-        
-        # Decoder
-        x4 = self.upsample(x3)
-        x5 = F.relu(self.dec_conv1(x4))
-        x6 = self.dec_conv2(x5)
-        
-        return x6
 
 def init_unet_model(device):
     model = UNet(in_channels=3, out_channels=1)
@@ -201,7 +167,10 @@ def main():
         'val': {'avg_loss': [], 'iou': [], 'precision': [], 'recall': [], 'f1_score': []}
     }
 
-    num_epochs = 10
+    num_epochs = int(config['Model']['num_epochs'])
+
+    start_time = time.time()  # Start timer for whole NN learning phase
+
     for epoch in range(num_epochs):
         # Training phase
         train_metrics = loop(model, train_loader, criterion, optimizer, device, phase="training")
@@ -216,6 +185,15 @@ def main():
         print(f"Validation: {val_metrics}")
 
         print(f"Epoch {epoch+1}/{num_epochs}")
+
+    end_time = time.time()
+    minutes = (end_time - start_time) // 60
+    seconds = (end_time - start_time) % 60
+
+    print(f"time spent training the {model_name} NN {minutes}:{seconds}")
+
+    for key in config['Model']:
+        print(f'{key}: {config["Model"][key]}')
 
     for metric_name in metrics['train'].keys(): 
         plot_metrics(metrics, metric_name) # tekes care of plotting val metrics as well
