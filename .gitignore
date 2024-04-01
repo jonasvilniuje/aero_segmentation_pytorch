@@ -2,4 +2,6 @@ airbus-vessel-recognition
 *.png
 *.jpg
 *.pyc
+*.7z
+*.zip
 env.config

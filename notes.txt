@@ -8,6 +8,7 @@ reikia jau saugoti rezultatus - modelis, laikas, nuotrauku kiekis, gauti rezulta
 03 28 planas
 ============
 nubraizyti metriku grafikus train, validation fazėms - accuracy, iou, loss etc. +
+
 pabandyti deeplabv3 su 40k imgs - in progress - fail, 
 pabandyti deeplabv3 su 10k imgs:
     test_metrics: {
@@ -18,6 +19,56 @@ pabandyti deeplabv3 su 10k imgs:
 pabandyti deeplabv3 su 20k imgs:
     .............
 pabandyti kitus modelius - ?
+    Normalus u-net:
+    name = u-net
+    batch_size = 8
+    num_epochs = 25
+    fixed_train_size = 20000
+    fixed_valid_size = 2000
+    fixed_test_size = 100
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    lievas u-net - 150017 parametrai 
+
+    unet su 10k imgs:
+    test_metrics: {'iou': 0.13724088247561167,
+    'avg_loss': 0.268336289525032, 'precision': 0.14151112004736213,
+    'recall': 0.8197554031318752, 'f1_score': 0.24135763071910993}
+
+    - 11 min
+
+    unet su 20k imgs:
+    test_metrics: {'iou': 0.043267072850978354,
+    'avg_loss': 0.3578447771072388, 'precision': 0.043376306687477634,
+    'recall': 0.9449980587550149, 'f1_score': 0.08294534348283546}
+
+    geras u-net - 1548945
+
+
+
 
 
 
@@ -28,5 +79,6 @@ bash komandos:
 scp deeplabv3_resnet50.zip jobr4333@uosis.mif.vu.lt:/stud3/2017/jobr4333/
 scp jobr4333@uosis.mif.vu.lt:/stud3/2017/jobr4333/deeplabv3_resnet50.zip /c/Users/master/Documents
 cat "$(ls -1t | grep 'slurm-[0-9]\{5\}\.out' | head -n 1)"
+sacct -j 30901 --format=JobID,Start,End
 
 
