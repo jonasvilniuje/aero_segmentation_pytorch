@@ -5,10 +5,9 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 import configparser
 import time
-from torchvision.models.segmentation import deeplabv3_resnet50, DeepLabV3_ResNet50_Weights
 from utils.dataLoading import CustomImageFolder
 from utils.visualization import visualize_segmentation, plot_metrics
-from models.unet import UNet
+from models.unet import init_unet_model, init_deeplabv3_resnet50_model
 
 # Define transformations
 transform = transforms.Compose([
@@ -44,32 +43,6 @@ def init_data():
     test_loader = DataLoader(test_dataset, batch_size=batch_size, shuffle=False)
 
     return train_loader, val_loader, test_loader
-
-def init_unet_model(device):
-    model = UNet(in_channels=3, out_channels=1)
-    model.to(device)
-    
-    # Counting parameters
-    total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    print(f"Total number of trainable parameters: {total_params}")
-
-    # Counting all parameters, including those not requiring gradients
-    total_all_params = sum(p.numel() for p in model.parameters())
-    print(f"Total number of parameters (including non-trainable): {total_all_params}")
-
-    return model
-
-def init_deeplabv3_resnet50_model(device):
-    # Initialize DeepLabv3 model
-    weights = DeepLabV3_ResNet50_Weights.COCO_WITH_VOC_LABELS_V1
-    model = deeplabv3_resnet50(weights=weights).to(device)
-
-    # Modify the output layer for binary segmentation
-    num_classes = 1  # Binary segmentation
-    in_features = model.classifier[-1].in_channels
-    model.classifier[-1] = nn.Conv2d(in_features, num_classes, kernel_size=1)
-    
-    return model
 
 def loop(model, loader, criterion, optimizer, device, phase="training"):
     if phase == "training":
