@@ -19,13 +19,54 @@ pabandyti deeplabv3 su 10k imgs:
 pabandyti deeplabv3 su 20k imgs:
     .............
 pabandyti kitus modelius - ?
-    Normalus u-net:
-    name = u-net
-    batch_size = 8
-    num_epochs = 25
-    fixed_train_size = 20000
-    fixed_valid_size = 2000
-    fixed_test_size = 100
+    Normalus u-net (1548945 parametrai)
+
+    time spent training the u-net NN 2:45
+    name: u-net
+    batch_size: 8
+    num_epochs: 10
+    fixed_train_size: 900
+    fixed_valid_size: 100
+    fixed_test_size: 100
+    test_metrics: {'iou': 0.49679919137466305, 'avg_loss': 0.5802811980247498, 'precision': 0.747149733975171, 'recall': 0.5972053462940462, 'f1_score': 0.6638154192459201}
+    
+    time spent training the u-net NN 2:42
+    name: u-net
+    batch_size: 8
+    num_epochs: 10
+    fixed_train_size: 1000
+    fixed_valid_size: 1000
+    fixed_test_size: 1000
+    test_metrics: {'iou': 0.2912425338605199, 'avg_loss': 0.4610980749130249, 'precision': 0.3369343065693431, 'recall': 0.6823019314150571, 'f1_score': 0.45110430646947686}
+
+    time spent training the u-net NN 3:14
+    name: u-net
+    batch_size: 8
+    num_epochs: 25
+    fixed_train_size: 1000
+    fixed_valid_size: 1000
+    fixed_test_size: 100
+    test_metrics: {'iou': 0.15313288265563516, 'avg_loss': 0.11767162084579467, 'precision': 0.1535620693493064, 'recall': 0.9820758379707519, 'f1_score': 0.2655945120617393}
+
+    time spent training the u-net NN 12:17
+    name: u-net
+    batch_size: 8
+    num_epochs: 25
+    fixed_train_size: 5000
+    fixed_valid_size: 1000
+    fixed_test_size: 100
+    test_metrics: {'iou': 0.26463870341037377, 'avg_loss': 0.06807894617319107, 'precision': 0.26619483983415637, 'recall': 0.9783874724990294, 'f1_score': 0.4185206457729275}
+
+
+    time spent training the u-net NN 27:3
+    name: u-net
+    batch_size: 8
+    num_epochs: 25
+    fixed_train_size: 10000
+    fixed_valid_size: 1000
+    fixed_test_size: 100
+    test_metrics: {'iou': 0.3999087334075993, 'avg_loss': 0.06389929056167602, 'precision': 0.4059677089720008, 'recall': 0.9640222596091627, 'f1_score': 0.5713354361811261}
+
 
 
 
@@ -66,12 +107,6 @@ pabandyti kitus modelius - ?
     'recall': 0.9449980587550149, 'f1_score': 0.08294534348283546}
 
     geras u-net - 1548945
-
-
-
-
-
-
 
 
 bash komandos:

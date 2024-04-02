@@ -190,7 +190,7 @@ def main():
     minutes = (end_time - start_time) // 60
     seconds = (end_time - start_time) % 60
 
-    print(f"time spent training the {model_name} NN {minutes}:{seconds}")
+    print(f"time spent training the {model_name} NN {int(minutes)}:{int(seconds)}")
 
     for key in config['Model']:
         print(f'{key}: {config["Model"][key]}')

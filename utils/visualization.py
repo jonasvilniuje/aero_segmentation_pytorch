@@ -1,4 +1,3 @@
-
 from PIL import Image
 import matplotlib.pyplot as plt
 import numpy as np
@@ -7,10 +6,13 @@ import os
 
 def create_folder_for_results():
     config = configparser.ConfigParser()
-    config.read('../env.config')
+    config.read('env.config')
+
     model_name = config['Model']['name']
     fixed_train_size = int(config['Model']['fixed_train_size'])
-    save_path = f'results/{model_name}_{fixed_train_size}'
+    num_epochs = config['Model']['num_epochs']
+    batch_size = config['Model']['batch_size']
+    save_path = f'results/{model_name}_{fixed_train_size}_{num_epochs}E_{batch_size}B'
 
     os.makedirs(save_path, exist_ok=True)
 
