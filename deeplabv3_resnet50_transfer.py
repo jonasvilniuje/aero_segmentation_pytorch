@@ -7,12 +7,21 @@ import configparser
 import time
 from utils.dataLoading import CustomImageFolder
 from utils.visualization import visualize_segmentation, plot_metrics
-from models.unet import init_unet_model, init_deeplabv3_resnet50_model
+from models.unet import init_unet_model
+from models.deeplabv3_resnet50 import init_deeplabv3_resnet50_model
 
-# Define transformations
-transform = transforms.Compose([
-    # transforms.Resize((256, 256)),
+train_transform = transforms.Compose([
+    # Existing transformations
+    transforms.Resize((256, 256)),  # Ensure images are resized if needed
     transforms.ToTensor(),
+
+    # Augmentations:
+    transforms.RandomHorizontalFlip(p=0.5),  # Random horizontal flips
+    transforms.RandomRotation(degrees=45),  # Random rotations
+    transforms.ColorJitter(brightness=0.2, contrast=0.2),  # Adjust brightness and contrast
+])
+eval_transform = transforms.Compose([
+    transforms.ToTensor()
 ])
 
 # Read train_root from env.config file
@@ -34,9 +43,9 @@ def init_data():
         fixed_test_size = 16
 
     # Define data loaders for training and testing
-    train_dataset = CustomImageFolder(train_root, transform=transform, fixed_size=fixed_train_size)
-    val_dataset = CustomImageFolder(val_root, transform=transform, fixed_size=fixed_valid_size)
-    test_dataset = CustomImageFolder(test_root, transform=transform, fixed_size=fixed_test_size)
+    train_dataset = CustomImageFolder(train_root, transform=train_transform, fixed_size=fixed_train_size)
+    val_dataset = CustomImageFolder(val_root, transform=eval_transform, fixed_size=fixed_valid_size)
+    test_dataset = CustomImageFolder(test_root, transform=eval_transform, fixed_size=fixed_test_size)
 
     train_loader = DataLoader(train_dataset, batch_size=batch_size, shuffle=True)
     val_loader = DataLoader(val_dataset, batch_size=batch_size, shuffle=False)
