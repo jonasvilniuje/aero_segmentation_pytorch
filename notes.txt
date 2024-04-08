@@ -4,10 +4,13 @@ koks modelis
 
 lyginamoji analize pvz deeplabui reikia x laiko ir y nuotrauku tam kad pasiekti S tiksluma, o unet reikia ....
 reikia jau saugoti rezultatus - modelis, laikas, nuotrauku kiekis, gauti rezultatai - iou, f1, loss ...
+galima sugalvoti metrika kuri nurodytu ar laivas rastas ar ne pagal tai kiek kaukeje laivo yra susegmentuota. Taip galima daryti, nes tai nera medicinine aplikacija
 
 03 28 planas
 ============
 nubraizyti metriku grafikus train, validation fazėms - accuracy, iou, loss etc. +
+
+
 
 pabandyti deeplabv3 su 40k imgs - in progress - fail, 
 pabandyti deeplabv3 su 10k imgs:
@@ -56,7 +59,6 @@ pabandyti kitus modelius - ?
     fixed_valid_size: 1000
     fixed_test_size: 100
     test_metrics: {'iou': 0.26463870341037377, 'avg_loss': 0.06807894617319107, 'precision': 0.26619483983415637, 'recall': 0.9783874724990294, 'f1_score': 0.4185206457729275}
-
 
     time spent training the u-net NN 27:3
     name: u-net
@@ -113,7 +115,8 @@ bash komandos:
 
 scp deeplabv3_resnet50.zip jobr4333@uosis.mif.vu.lt:/stud3/2017/jobr4333/
 scp jobr4333@uosis.mif.vu.lt:/stud3/2017/jobr4333/deeplabv3_resnet50.zip /c/Users/master/Documents
-cat "$(ls -1t | grep 'slurm-[0-9]\{5\}\.out' | head -n 1)"
+scp jobr4333@uosis.mif.vu.lt:/stud3/2017/jobr4333best_model_weights.pth /c/Users/master/Documents
 sacct -j 30901 --format=JobID,Start,End
+cat "$(ls -1t | grep 'slurm-[0-9]\{5\}\.out' | head -n 1)"
 
 

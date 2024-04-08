@@ -8,7 +8,7 @@ def get_min_max_pixel_values(image_path):
     max_val = max(pixels)
     return min_val, max_val
 
-def visualize_segmentation(image, segmentation_mask, image_name):
+def visualize_segmentation(image, segmentation_mask, image_name = "output"):
     import matplotlib.pyplot as plt
     import numpy as np
 
@@ -19,11 +19,11 @@ def visualize_segmentation(image, segmentation_mask, image_name):
     plt.axis('off')
 
     plt.subplot(1, 2, 2)
-    plt.imshow(segmentation_mask)
+    plt.imshow(np.transpose(segmentation_mask.numpy(), (1, 2, 0)))
     plt.title("Segmentation Mask")
     plt.axis('off')
-
+    plt.show()
     # plt.savefig('/c/Users/Master/Documents/VU/ML/aero_pytorch/001aee007.png')
-    plt.savefig(f'C:\\Users\\Master\\Documents\\VU\\ML\\aero_pytorch\\results\\{image_name}.png')
+    # plt.savefig(f'results/{image_name}.png')
     plt.close()
 
