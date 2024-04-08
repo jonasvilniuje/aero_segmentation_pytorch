@@ -105,8 +105,8 @@ def loop(model, loader, criterion, optimizer, device, phase="training"):
         
         # Calculate metrics using the accumulated values
         precision = total_TP / (total_TP + total_FP) if (total_TP + total_FP) > 0 else 0
-        accuracy = total_TP + total_TN / (total_TP + total_TN + total_FP) if (total_TP + total_TN + total_FP) > 0 else 0
-        recall = total_TP / (total_TP + total_FN) if (total_TP + total_FN) > 0 else 0
+        accuracy = total_TP + total_TN / (total_TP + total_TN + total_FP + total_FP) if (total_TP + total_TN + total_FP) > 0 else 0
+        recall = total_TP / (total_TP + total_FN) if (total_TP + total_FP) > 0 else 0
         f1_score = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0
         iou = total_TP / (total_TP + total_FP + total_FN) if (total_TP + total_FP + total_FN) > 0 else 0
     
