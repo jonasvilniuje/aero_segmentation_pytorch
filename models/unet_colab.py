@@ -5,9 +5,9 @@ import torch.nn.functional as F
 class ConvBlock(nn.Module):
     def __init__(self, in_channels, out_channels, dropout_prob=0):
         super(ConvBlock, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding='same')
+        self.conv1 = nn.Conv2d(in_channels, out_channels, kernel_size=3, padding=1)
         self.relu = nn.ReLU()
-        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, padding='same')
+        self.conv2 = nn.Conv2d(out_channels, out_channels, kernel_size=3, padding=1)
         if dropout_prob > 0:
             self.dropout = nn.Dropout(dropout_prob)
         else:
@@ -80,7 +80,7 @@ class UNet(nn.Module):
         return outputs
 
 
-def init_unet_model(device):
+def init_unet_model_colab(device):
     # model = UNet(in_channels=3, out_channels=1)
     model = UNet(in_channels=3, out_channels=1)
     

@@ -69,12 +69,25 @@ pabandyti kitus modelius - ?
     fixed_test_size: 100
     test_metrics: {'iou': 0.3999087334075993, 'avg_loss': 0.06389929056167602, 'precision': 0.4059677089720008, 'recall': 0.9640222596091627, 'f1_score': 0.5713354361811261}
 
+    name: deeplabv3_resnet50
+    batch_size: 8
+    num_epochs: 25
+    fixed_train_size: 3000
+    fixed_valid_size: 1000
+    fixed_test_size: 1000
+    testing
+    testing
+    test_metrics: {'iou': 0.3407164869029276, 'avg_loss': 1.0744748339056969, 'precision': 0.39986437613019893, 'recall': 0.6972802522664564, 'f1_score': 0.5082603074270938}
 
+    time spent training the deeplabv3_resnet50 NN 70:53
+    name: deeplabv3_resnet50
+    batch_size: 8
+    num_epochs: 25
+    fixed_train_size: 5000
+    fixed_valid_size: 1000
+    fixed_test_size: 1000
 
-
-
-
-
+    test_metrics: {'iou': 0.37742148495115374, 'avg_loss': 0.038590526804327965, 'precision': 0.3789626967406122, 'recall': 0.9893393296233984, 'f1_score': 0.548011613111346}
 
 
 

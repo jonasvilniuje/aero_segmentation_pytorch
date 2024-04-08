@@ -7,8 +7,8 @@ import configparser
 import time
 from utils.dataLoading import CustomImageFolder
 from utils.visualization import visualize_segmentation, plot_metrics
-# from models.unet import init_unet_model
-from models.unet_colab import init_unet_model
+from models.unet import init_unet_model
+from models.unet_colab import init_unet_model_colab
 from models.deeplabv3_resnet50 import init_deeplabv3_resnet50_model
 
 train_transform = transforms.Compose([
@@ -97,7 +97,6 @@ def loop(model, loader, criterion, optimizer, device, phase="training"):
             total_FN += FN
 
             if phase == "testing":
-                print(phase)
                 # iterate through imgs, masks and outputs to plot them
                 for i in range(0, len(outputs)):
                     visualize_segmentation(images[i], masks[i], outputs[i], image_name=f"output{i}_")
@@ -128,6 +127,8 @@ def main():
     
     if model_name == 'unet':
         model = init_unet_model(device)
+    elif model_name == 'unet_colab':
+        model = init_unet_model_colab(device)
     elif model_name == 'deeplabv3_resnet50':
         model = init_deeplabv3_resnet50_model(device)
     else:
