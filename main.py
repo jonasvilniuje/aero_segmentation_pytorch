@@ -61,7 +61,7 @@ def loop(model, loader, criterion, optimizer, device, phase="training"):
         model.eval()
     
     # Initialize for IoU calculation
-    total_TP, total_FP, total_FN, iou = 0, 0, 0, 0
+    total_TP, total_TN, total_FP, total_FN, iou = 0, 0, 0, 0, 0
     total_loss = 0.0
 
     with torch.set_grad_enabled(phase == "training"):
@@ -88,11 +88,13 @@ def loop(model, loader, criterion, optimizer, device, phase="training"):
             
             # Calculate TP, FP, FN (and TN if needed) for the current batch
             TP = ((output_bin == 1) & (mask_bin == 1)).sum().item()
+            TN = ((output_bin == 0) & (mask_bin == 0)).sum().item()
             FP = ((output_bin == 1) & (mask_bin == 0)).sum().item()
             FN = ((output_bin == 0) & (mask_bin == 1)).sum().item()
             
             # Accumulate metrics components
             total_TP += TP
+            total_TN += TN
             total_FP += FP
             total_FN += FN
 
@@ -103,6 +105,7 @@ def loop(model, loader, criterion, optimizer, device, phase="training"):
         
         # Calculate metrics using the accumulated values
         precision = total_TP / (total_TP + total_FP) if (total_TP + total_FP) > 0 else 0
+        accuracy = total_TP + total_TN / (total_TP + total_TN + total_FP) if (total_TP + total_TN + total_FP) > 0 else 0
         recall = total_TP / (total_TP + total_FN) if (total_TP + total_FN) > 0 else 0
         f1_score = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0
         iou = total_TP / (total_TP + total_FP + total_FN) if (total_TP + total_FP + total_FN) > 0 else 0
@@ -112,6 +115,7 @@ def loop(model, loader, criterion, optimizer, device, phase="training"):
     return {
         'iou': iou,
         'avg_loss': avg_loss,
+        'accuracy': accuracy,
         'precision': precision,
         'recall': recall,
         'f1_score': f1_score
@@ -136,6 +140,7 @@ def main():
         
     model.to(device)
     
+    # questionable approach
     background_percentage = 99
     target_percentage = 1
     # Calculate pos_weight

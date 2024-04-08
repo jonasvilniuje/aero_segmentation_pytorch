@@ -4,9 +4,12 @@ import torch.nn as nn
 def double_conv(in_channels, out_channels):
     return nn.Sequential(
         nn.Conv2d(in_channels, out_channels, 3, padding=1),
+        nn.Dropout2d(0.1),
+        nn.BatchNorm2d(out_channels),
         nn.ReLU(inplace=True),
-        nn.Conv2d(out_channels, out_channels, 3, padding=1),
-        nn.ReLU(inplace=True)
+        # nn.Conv2d(out_channels, out_channels, 3, padding=1),
+        # nn.BatchNorm2d(out_channels),
+        # nn.ReLU(inplace=True)
     )
 
 class UNet(nn.Module):
@@ -57,10 +60,19 @@ class UNet(nn.Module):
         out = self.conv_last(x)
         
         return out
+    
+import torch.nn.init as init
+
+def initialize_weights(m):
+    if isinstance(m, nn.Conv2d):
+        init.kaiming_normal_(m.weight.data, mode='fan_out', nonlinearity='relu')
+        if m.bias is not None:
+            init.constant_(m.bias.data, 0)
 
 def init_unet_model(device):
     # model = UNet(in_channels=3, out_channels=1)
-    model = UNet(1)
+    model = UNet(n_class=1)
+    model.apply(initialize_weights)
     model.to(device)
     
     # Counting parameters
