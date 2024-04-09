@@ -51,6 +51,26 @@ pabandyti kitus modelius - ?
     fixed_test_size: 100
     test_metrics: {'iou': 0.15313288265563516, 'avg_loss': 0.11767162084579467, 'precision': 0.1535620693493064, 'recall': 0.9820758379707519, 'f1_score': 0.2655945120617393}
 
+    time spent training the unet NN 4:26
+    name: unet
+    batch_size: 8
+    num_epochs: 10
+    fixed_train_size: 2000
+    fixed_valid_size: 100
+    fixed_test_size: 1000
+    test_metrics: {'iou': 0.1796561294530183, 'avg_loss': 0.08400934487581253, 'accuracy': 61430.97394141704, 'precision': 0.17985916936274868, 'recall': 0.9937556619645399, 'f1_score': 0.30459067683786983}
+
+    Epoch 10/10
+    time spent training the unet NN 9:8
+    name: unet
+    batch_size: 8
+    num_epochs: 10
+    fixed_train_size: 4000
+    fixed_valid_size: 100
+    fixed_test_size: 1000
+    test_metrics: {'iou': 0.2802218997409945, 'avg_loss': 0.05771894037723541, 'accuracy': 61020.98344626032, 'precision': 0.28125, 'recall': 0.9871230749320564, 'f1_score': 0.43777082675696616}
+
+
     time spent training the u-net NN 12:17
     name: u-net
     batch_size: 8
@@ -91,6 +111,15 @@ pabandyti kitus modelius - ?
 
 
 
+    time spent training the unet NN 68:11 (laptop)
+    Total number of trainable parameters: 1962625
+    name: unet
+    batch_size: 8
+    num_epochs: 25
+    fixed_train_size: 30
+    fixed_valid_size: 10
+    fixed_test_size: 100
+    test_metrics: {'iou': 0.34046707802858706, 'avg_loss': 0.3100055009126663, 'precision': 0.3606055592322965, 'recall': 0.8590855340953882, 'f1_score': 0.5079827525929379}
 
 
 
