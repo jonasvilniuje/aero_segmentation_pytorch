@@ -38,11 +38,6 @@ def init_data():
     fixed_test_size = int(config['Model']['fixed_test_size'])
     batch_size = int(config['Model']['batch_size'])
 
-    if not torch.cuda.is_available():
-        fixed_train_size = 128
-        fixed_valid_size = 16
-        fixed_test_size = 16
-
     # Define data loaders for training and testing
     train_dataset = CustomImageFolder(train_root, transform=eval_transform, fixed_size=fixed_train_size)
     val_dataset = CustomImageFolder(val_root, transform=eval_transform, fixed_size=fixed_valid_size)
@@ -63,7 +58,6 @@ def loop(model, loader, criterion, optimizer, device, phase="training"):
     # Initialize for IoU calculation
     total_TP, total_TN, total_FP, total_FN, iou = 0, 0, 0, 0, 0
     total_loss = 0.0
-
 
     with torch.set_grad_enabled(phase == "training"):
         for images, masks in loader:
@@ -106,7 +100,7 @@ def loop(model, loader, criterion, optimizer, device, phase="training"):
 
         # Calculate metrics using the accumulated values
         precision = total_TP / (total_TP + total_FP) if (total_TP + total_FP) > 0 else 0
-        accuracy = total_TP + total_TN / (total_TP + total_TN + total_FP + total_FP) if (total_TP + total_TN + total_FP) > 0 else 0
+        accuracy = (total_TP + total_TN) / (total_TP + total_TN + total_FP + total_FN) if (total_TP + total_TN + total_FP + total_FN) > 0 else 0
         recall = total_TP / (total_TP + total_FN) if (total_TP + total_FP) > 0 else 0
         f1_score = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0
         iou = total_TP / (total_TP + total_FP + total_FN) if (total_TP + total_FP + total_FN) > 0 else 0
@@ -181,17 +175,17 @@ def main():
         seconds = (end_time - start_time) % 60
 
         print(f"Epoch {epoch+1}/{num_epochs}")
-        print(f"time spent training the {model_name} NN {int(minutes)}:{int(seconds)}")
+    print(f"time spent training the {model_name} NN {int(minutes)}:{int(seconds)}")
 
-        for key in config['Model']:
-            print(f'{key}: {config["Model"][key]}')
+    for key in config['Model']:
+        print(f'{key}: {config["Model"][key]}')
 
-        for metric_name in metrics['train'].keys(): 
-            plot_metrics(metrics, metric_name) # tekes care of plotting val metrics as well
+    for metric_name in metrics['train'].keys(): 
+        plot_metrics(metrics, metric_name) # tekes care of plotting val metrics as well
         
-        # Test the model
-        test_metrics = loop(model, test_loader, criterion, None, device, phase="testing")
-        print(f'test_metrics: {test_metrics}')
+    # Test the model
+    test_metrics = loop(model, test_loader, criterion, None, device, phase="testing")
+    print(f'test_metrics: {test_metrics}')
 
 if __name__ == "__main__":
     main()
