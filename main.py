@@ -10,7 +10,6 @@ from utils.visualization import visualize_segmentation, plot_metrics
 from models.unet import init_unet_model
 from models.unet_colab import init_unet_model_colab
 from models.deeplabv3_resnet50 import init_deeplabv3_resnet50_model
-from torch.profiler import profile, record_function, ProfilerActivity
 
 train_transform = transforms.Compose([
     # Existing transformations
@@ -55,7 +54,7 @@ def init_data():
 
     return train_loader, val_loader, test_loader
 
-def loop(model, loader, criterion, optimizer, device, phase="training", profiler=None):
+def loop(model, loader, criterion, optimizer, device, phase="training"):
     if phase == "training":
         model.train()
     else:
@@ -67,45 +66,43 @@ def loop(model, loader, criterion, optimizer, device, phase="training", profiler
 
 
     with torch.set_grad_enabled(phase == "training"):
-        if profiler is not None:
-            with profiler as prof:
-                for images, masks in loader:
-                    # Model prediction and any necessary processing here
-                    images, masks = images.to(device), masks.to(device)
+        for images, masks in loader:
+            # Model prediction and any necessary processing here
+            images, masks = images.to(device), masks.to(device)
 
-                    # Handle different model output types
-                    model_output = model(images)
-                    outputs = model_output if isinstance(model_output, torch.Tensor) else model_output['out']
-                    
-                    loss = criterion(outputs, masks)
+            # Handle different model output types
+            model_output = model(images)
+            outputs = model_output if isinstance(model_output, torch.Tensor) else model_output['out']
+            
+            loss = criterion(outputs, masks)
 
-                    if phase == "training":
-                        optimizer.zero_grad()
-                        loss.backward()
-                        optimizer.step()
+            if phase == "training":
+                optimizer.zero_grad()
+                loss.backward()
+                optimizer.step()
 
-                    total_loss += loss.item() * images.size(0)
+            total_loss += loss.item() * images.size(0)
 
-                    # Convert outputs and masks to binary if necessary, e.g., for segmentation tasks
-                    output_bin = (outputs > 0.5).float()
-                    mask_bin = masks.float()  # Assuming masks are already binary
-                    
-                    # Calculate TP, FP, FN (and TN if needed) for the current batch
-                    TP = ((output_bin == 1) & (mask_bin == 1)).sum().item()
-                    TN = ((output_bin == 0) & (mask_bin == 0)).sum().item()
-                    FP = ((output_bin == 1) & (mask_bin == 0)).sum().item()
-                    FN = ((output_bin == 0) & (mask_bin == 1)).sum().item()
-                    
-                    # Accumulate metrics components
-                    total_TP += TP
-                    total_TN += TN
-                    total_FP += FP
-                    total_FN += FN
+            # Convert outputs and masks to binary if necessary, e.g., for segmentation tasks
+            output_bin = (outputs > 0.5).float()
+            mask_bin = masks.float()  # Assuming masks are already binary
+            
+            # Calculate TP, FP, FN (and TN if needed) for the current batch
+            TP = ((output_bin == 1) & (mask_bin == 1)).sum().item()
+            TN = ((output_bin == 0) & (mask_bin == 0)).sum().item()
+            FP = ((output_bin == 1) & (mask_bin == 0)).sum().item()
+            FN = ((output_bin == 0) & (mask_bin == 1)).sum().item()
+            
+            # Accumulate metrics components
+            total_TP += TP
+            total_TN += TN
+            total_FP += FP
+            total_FN += FN
 
-                    if phase == "testing":
-                        # iterate through imgs, masks and outputs to plot them
-                        for i in range(0, len(outputs)):
-                            visualize_segmentation(images[i], masks[i], outputs[i], image_name=f"output{i}_")
+            if phase == "testing":
+                # iterate through imgs, masks and outputs to plot them
+                for i in range(0, len(outputs)):
+                    visualize_segmentation(images[i], masks[i], outputs[i], image_name=f"output{i}_")
 
         # Calculate metrics using the accumulated values
         precision = total_TP / (total_TP + total_FP) if (total_TP + total_FP) > 0 else 0
@@ -164,32 +161,26 @@ def main():
 
     start_time = time.time()  # Start timer for whole NN learning phase
 
-    with profile(activities=[ProfilerActivity.CPU, ProfilerActivity.CUDA], 
-                 schedule=torch.profiler.schedule(wait=1, warmup=1, active=3, repeat=2),
-                 on_trace_ready=torch.profiler.tensorboard_trace_handler('./logs'),
-                 record_shapes=True,
-                 profile_memory=True,
-                 with_stack=True) as profiler:
-        for epoch in range(num_epochs):
-            # Training phase
-            train_metrics = loop(model, train_loader, criterion, optimizer, device, "training", profiler)
-            profiler.step()  # Inform the profiler that an epoch has ended
-            for key in metrics['train'].keys():
-                metrics['train'][key].append(train_metrics[key])
-            print(f"Training: {train_metrics}")
-        
-            # Validation phase
-            val_metrics = loop(model, val_loader, criterion, None, device, phase="validation")
-            for key in metrics['val'].keys():
-                metrics['val'][key].append(val_metrics[key])
-            print(f"Validation: {val_metrics}")
+    for epoch in range(num_epochs):
+        # Training phase
+        train_metrics = loop(model, train_loader, criterion, optimizer, device, "training")
 
-            print(f"Epoch {epoch+1}/{num_epochs}")
+        for key in metrics['train'].keys():
+            metrics['train'][key].append(train_metrics[key])
+        print(f"Training: {train_metrics}")
+    
+        # Validation phase
+        val_metrics = loop(model, val_loader, criterion, None, device, phase="validation")
+
+        for key in metrics['val'].keys():
+            metrics['val'][key].append(val_metrics[key])
+        print(f"Validation: {val_metrics}")
 
         end_time = time.time()
         minutes = (end_time - start_time) // 60
         seconds = (end_time - start_time) % 60
 
+        print(f"Epoch {epoch+1}/{num_epochs}")
         print(f"time spent training the {model_name} NN {int(minutes)}:{int(seconds)}")
 
         for key in config['Model']:
