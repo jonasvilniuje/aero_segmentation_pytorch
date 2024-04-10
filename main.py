@@ -6,7 +6,7 @@ from torchvision import transforms
 import configparser
 import time
 from utils.dataLoading import CustomImageFolder
-from utils.visualization import visualize_segmentation, plot_metrics
+from utils.visualization import visualize_segmentation, plot_metrics, create_folder_for_results
 from models.unet import init_unet_model
 from models.unet_colab import init_unet_model_colab
 from models.deeplabv3_resnet50 import init_deeplabv3_resnet50_model
@@ -28,16 +28,15 @@ eval_transform = transforms.Compose([
 # Read train_root from env.config file
 config = configparser.ConfigParser()
 config.read('env.config')
+train_root = config['Paths']['train_root']
+val_root = config['Paths']['val_root']
+test_root = config['Paths']['test_root']
+fixed_train_size = int(config['Model']['fixed_train_size'])
+fixed_valid_size = int(config['Model']['fixed_valid_size'])
+fixed_test_size = int(config['Model']['fixed_test_size'])
+batch_size = int(config['Model']['batch_size'])
 
 def init_data():
-    train_root = config['Paths']['train_root']
-    val_root = config['Paths']['val_root']
-    test_root = config['Paths']['test_root']
-    fixed_train_size = int(config['Model']['fixed_train_size'])
-    fixed_valid_size = int(config['Model']['fixed_valid_size'])
-    fixed_test_size = int(config['Model']['fixed_test_size'])
-    batch_size = int(config['Model']['batch_size'])
-
     # Define data loaders for training and testing
     train_dataset = CustomImageFolder(train_root, transform=eval_transform, fixed_size=fixed_train_size)
     val_dataset = CustomImageFolder(val_root, transform=eval_transform, fixed_size=fixed_valid_size)
@@ -154,6 +153,7 @@ def main():
     num_epochs = int(config['Model']['num_epochs'])
 
     start_time = time.time()  # Start timer for whole NN learning phase
+    best_val_loss = float('inf') # For best model results tracking
 
     for epoch in range(num_epochs):
         # Training phase
@@ -173,6 +173,17 @@ def main():
         end_time = time.time()
         minutes = (end_time - start_time) // 60
         seconds = (end_time - start_time) % 60
+        
+        val_loss = val_metrics['avg_loss']
+        if val_metrics['avg_loss'] < best_val_loss:
+            print(f"Validation loss improved from {best_val_loss} to {val_loss}")
+            best_val_loss = val_loss
+
+            model_config = f'{model_name}_{fixed_train_size}_{num_epochs}E_{batch_size}B'
+            model_path =f'results/{model_config}/{model_config}_best_model.pth'
+            create_folder_for_results(model_config)
+            torch.save(model.state_dict(), model_path)
+            print("------- Saved best model ---------")
 
         print(f"Epoch {epoch+1}/{num_epochs}")
     print(f"time spent training the {model_name} NN {int(minutes)}:{int(seconds)}")
@@ -181,7 +192,7 @@ def main():
         print(f'{key}: {config["Model"][key]}')
 
     for metric_name in metrics['train'].keys(): 
-        plot_metrics(metrics, metric_name) # tekes care of plotting val metrics as well
+        plot_metrics(metrics, metric_name) # takes care of plotting val metrics as well
         
     # Test the model
     test_metrics = loop(model, test_loader, criterion, None, device, phase="testing")
