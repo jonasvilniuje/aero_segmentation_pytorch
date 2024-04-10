@@ -77,6 +77,18 @@ pabandyti kitus modelius - ?
     fixed_test_size: 1000
     test_metrics: {'iou': 0.1727027141705444, 'avg_loss': 0.09203365743160248, 'accuracy': 0.9776869201660157, 'precision': 0.17307626888011973, 'recall': 0.9876569173029637, 'f1_score': 0.2945379286389687}
 
+    time spent training the unet NN 5:47
+    Total number of trainable parameters: 3876737
+    Total number of parameters (including non-trainable): 3876737
+    None
+    name: unet
+    batch_size: 64
+    num_epochs: 25
+    fixed_train_size: 1000
+    fixed_valid_size: 128
+    fixed_test_size: 1000
+    test_metrics: {'iou': 0.19163193593200947, 'avg_loss': 0.08729808926582336, 'accuracy': 0.9803778076171875, 'precision': 0.1921428481387639, 'recall': 0.9863142228549243, 'f1_score': 0.32162940611713076}
+
     time spent training the unet NN 4:26
     name: unet
     batch_size: 8
@@ -115,9 +127,55 @@ pabandyti kitus modelius - ?
     fixed_test_size: 100
     test_metrics: {'iou': 0.3999087334075993, 'avg_loss': 0.06389929056167602, 'precision': 0.4059677089720008, 'recall': 0.9640222596091627, 'f1_score': 0.5713354361811261}
 
+    ------------------------------------efficientUNet_model---------------------------------------------------------------------------------
+    time spent training the efficientUNet_model NN 3:49
+    Total number of trainable parameters: 1928417
+    Total number of parameters (including non-trainable): 1928417
+    name: efficientUNet_model
+    batch_size: 16
+    num_epochs: 25
+    fixed_train_size: 1000
+    fixed_valid_size: 128
+    fixed_test_size: 1000
+    test_metrics: {'iou': 0.3780880703733235, 'avg_loss': 0.08107823789119721, 'accuracy': 0.9926805114746093, 'precision': 0.38684238452763114, 'recall': 0.9435259479746344, 'f1_score': 0.5487139443430485}
+    
+    time spent training the efficientUNet_model NN 3:31
+    Total number of trainable parameters: 1928417
+    Total number of parameters (including non-trainable): 1928417
+    None
+    name: efficientUNet_model
+    batch_size: 32
+    num_epochs: 25
+    fixed_train_size: 1000
+    fixed_valid_size: 128
+    fixed_test_size: 1000
+    test_metrics: {'iou': 0.354561556560129, 'avg_loss': 0.1486257767677307, 'accuracy': 0.9925491333007812, 'precision': 0.37479390806203716, 'recall': 0.8678659246796946, 'f1_score': 0.5235074845332657}
+
+    Total number of trainable parameters: 1928417
+    Total number of parameters (including non-trainable): 1928417
+    name: efficientUNet_model
+    batch_size: 64
+    num_epochs: 25
+    fixed_train_size: 1000
+    fixed_valid_size: 128
+    fixed_test_size: 1000
+    test_metrics: {'iou': 0.262050331080238, 'avg_loss': 0.09773539990186692, 'accuracy': 0.9869144439697266, 'precision': 0.26308037199096374, 'recall': 0.9852788921961951, 'f1_score': 0.4152771480293325}
+
+    time spent training the efficientUNet_model NN 3:37
+    Total number of trainable parameters: 1928417
+    Total number of parameters (including non-trainable): 1928417
+    name: efficientUNet_model
+    batch_size: 128
+    num_epochs: 25
+    fixed_train_size: 1000
+    fixed_valid_size: 128
+    fixed_test_size: 1000
+    test_metrics: {'iou': 0.3991515567119125, 'avg_loss': 0.09237680405378342, 'accuracy': 0.9931814575195312, 'precision': 0.40582236257501814, 'recall': 0.9604471334282386, 'f1_score': 0.570562287976782}
+    test_metrics: {'iou': 0.32377196319774515, 'avg_loss': 0.06092556081712246, 'accuracy': 0.9903719329833984, 'precision': 0.32620866513699553, 'recall': 0.9774492040895562, 'f1_score': 0.48916576600645234}
+    
     ------------------------------------imported_segm_model_unet_resnet34_imagenet---------------------------------------------------------------------------------
     model name: u-resnet34
-    Total number of trainable parameters: 24436369
+    Total number of trainable parameters: 24,436,369
     Total number of parameters (including non-trainable): 24436369
 
     name: imported_segm_model_unet_resnet34_imagenet  NN 3:20

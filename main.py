@@ -108,12 +108,12 @@ def loop(model, loader, criterion, optimizer, device, phase="training"):
     avg_loss = total_loss / len(loader.dataset)
 
     return {
-        'iou': iou,
-        'avg_loss': avg_loss,
-        'accuracy': accuracy, 
-        'precision': precision,
-        'recall': recall,
-        'f1_score': f1_score
+        'iou': round(iou, 3),
+        'avg_loss': round(avg_loss, 3),
+        'accuracy': round(accuracy, 3), 
+        'precision': round(precision, 3),
+        'recall': round(recall, 3),
+        'f1_score': round(f1_score, 3)
     }
 
 def main():
@@ -179,6 +179,7 @@ def main():
         end_time = time.time()
         minutes = (end_time - start_time) // 60
         seconds = (end_time - start_time) % 60
+        formatted_time = minutes + ":" + seconds.zfill(2)
         
         val_loss = val_metrics['avg_loss']
         if val_metrics['avg_loss'] < best_val_loss:
@@ -193,6 +194,7 @@ def main():
 
         print(f"Epoch {epoch+1}/{num_epochs}")
     print(f"time spent training the {model_name} NN {int(minutes)}:{int(seconds)}")
+    print(formatted_time)
 
     print(print_model_parameters(model))
 
@@ -205,7 +207,18 @@ def main():
     # Test the model
     test_metrics = loop(model, test_loader, criterion, None, device, phase="testing")
     
-    print(f'test_metrics: {test_metrics}')
+    model_test_results = {
+        "model_name:": model_name,
+        "fixed_train_size": fixed_train_size,
+        "fixed_valid_size": fixed_valid_size,
+        "fixed_test_size": fixed_test_size,
+        "batch_size": batch_size,
+        "training_time": formatted_time,
+        **test_metrics}
+    
+    for result in model_test_results:
+        print(round(result, 3))
+    print(f'model_test_results: {model_test_results}')
 
 if __name__ == "__main__":
     main()
