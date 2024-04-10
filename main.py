@@ -191,7 +191,7 @@ def main():
         print(f"Epoch {epoch+1}/{num_epochs}")
     print(f"time spent training the {model_name} NN {int(minutes)}:{int(seconds)}")
 
-    print(print_model_parameters())
+    print(print_model_parameters(model))
 
     for key in config['Model']:
         print(f'{key}: {config["Model"][key]}')
