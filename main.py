@@ -107,14 +107,16 @@ def loop(model, loader, criterion, optimizer, device, phase="training"):
     
     avg_loss = total_loss / len(loader.dataset)
 
-    return {
-        'iou': round(iou, 3),
-        'avg_loss': round(avg_loss, 3),
-        'accuracy': round(accuracy, 3), 
-        'precision': round(precision, 3),
-        'recall': round(recall, 3),
-        'f1_score': round(f1_score, 3)
+    metrics = {
+        'iou': iou,
+        'avg_loss': avg_loss,
+        'accuracy': accuracy, 
+        'precision': precision,
+        'recall': recall,
+        'f1_score': f1_score
     }
+
+    return {key: round(value, 4) for key, value in metrics.items()}
 
 def main():
     # Check if GPU is available
@@ -179,7 +181,7 @@ def main():
         end_time = time.time()
         minutes = (end_time - start_time) // 60
         seconds = (end_time - start_time) % 60
-        formatted_time = minutes + ":" + seconds.zfill(2)
+        formatted_time = str(minutes) + ":" + str(seconds.zfill(2))
         
         val_loss = val_metrics['avg_loss']
         if val_metrics['avg_loss'] < best_val_loss:
@@ -217,7 +219,7 @@ def main():
         **test_metrics}
     
     for result in model_test_results:
-        print(round(result, 3))
+        print(round(result, 4))
     print(f'model_test_results: {model_test_results}')
 
 if __name__ == "__main__":
