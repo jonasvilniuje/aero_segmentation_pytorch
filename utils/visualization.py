@@ -92,7 +92,6 @@ def plot_metrics(metrics, metric_name, show_only=False):
     plt.close()  # Correctly close the plot after saving or showing
     
 def print_model_parameters(model):
-    print('model name:', model.name)
     # Counting parameters
     total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
     print(f"Total number of trainable parameters: {total_params}")

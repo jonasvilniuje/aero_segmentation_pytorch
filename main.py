@@ -198,7 +198,7 @@ def main():
 
     for metric_name in metrics['train'].keys(): 
         plot_metrics(metrics, metric_name) # takes care of plotting val metrics as well
-        
+    
     # Test the model
     test_metrics = loop(model, test_loader, criterion, None, device, phase="testing")
     
