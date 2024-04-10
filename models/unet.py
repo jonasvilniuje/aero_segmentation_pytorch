@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.init as init
 
 def double_conv(in_channels, out_channels):
     return nn.Sequential(
@@ -7,30 +8,26 @@ def double_conv(in_channels, out_channels):
         nn.Dropout2d(0.1),
         nn.BatchNorm2d(out_channels),
         nn.ReLU(inplace=True),
-        # nn.Conv2d(out_channels, out_channels, 3, padding=1),
-        # nn.BatchNorm2d(out_channels),
-        # nn.ReLU(inplace=True)
     )
 
 class UNet(nn.Module):
-
     def __init__(self, n_class):
         super().__init__()
                 
         self.dconv_down1 = double_conv(3, 64)
         self.dconv_down2 = double_conv(64, 128)
         self.dconv_down3 = double_conv(128, 256)
-        self.dconv_down4 = double_conv(256, 512)        
-
+        # Removed the deepest layer
+        
         self.maxpool = nn.MaxPool2d(2)
         self.upsample = nn.Upsample(scale_factor=2, mode='bilinear', align_corners=True)        
         
-        self.dconv_up3 = double_conv(256 + 512, 256)
-        self.dconv_up2 = double_conv(128 + 256, 128)
+        self.dconv_up2 = double_conv(128 + 256, 128)  # Adjusted for the removed layer
         self.dconv_up1 = double_conv(128 + 64, 64)
         
         self.conv_last = nn.Conv2d(64, n_class, 1)
-        
+
+        self.name = "U-net, custom"
         
     def forward(self, x):
         conv1 = self.dconv_down1(x)
@@ -42,14 +39,10 @@ class UNet(nn.Module):
         conv3 = self.dconv_down3(x)
         x = self.maxpool(conv3)   
         
-        x = self.dconv_down4(x)
+        # Removed the forward pass through the removed layer
         
         x = self.upsample(x)        
-        x = torch.cat([x, conv3], dim=1)
-        
-        x = self.dconv_up3(x)
-        x = self.upsample(x)        
-        x = torch.cat([x, conv2], dim=1)       
+        x = torch.cat([x, conv2], dim=1)  # Adjusted for the removed layer
 
         x = self.dconv_up2(x)
         x = self.upsample(x)        
@@ -60,8 +53,6 @@ class UNet(nn.Module):
         out = self.conv_last(x)
         
         return out
-    
-import torch.nn.init as init
 
 def initialize_weights(m):
     if isinstance(m, nn.Conv2d):
@@ -70,7 +61,6 @@ def initialize_weights(m):
             init.constant_(m.bias.data, 0)
 
 def init_unet_model(device):
-    # model = UNet(in_channels=3, out_channels=1)
     model = UNet(n_class=1)
     model.apply(initialize_weights)
     model.to(device)

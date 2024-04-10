@@ -9,7 +9,12 @@ Taip galima daryti, nes tai nera medicinine aplikacija
 
 FOKUSAS:
 daugiau konkrečios analizės, atsakyti į klausimus pvz. kaip daro įtaką modeliams epochų skaičius, batch_size, duomenų kiekis, ...
-pabandyti naudoti bibliotekų modelius
+tam, kad tai padaryti, reikia sistemingai saugoti rezultatus.
+
+prioritetai:
+tvarkingai saugoti duomnenis - modelis, duomenu kiekis, config, gautos metrikos, tam kad po to braižyti grafikus ir lyginti rezultatus, ieškoti dėsningumo
+
+pabandyti naudoti bibliotekų modelius +
 
 pabandyti deeplabv3 su 40k imgs - in progress - fail, 
 pabandyti deeplabv3 su 10k imgs:
@@ -50,6 +55,28 @@ pabandyti kitus modelius - ?
     fixed_test_size: 100
     test_metrics: {'iou': 0.15313288265563516, 'avg_loss': 0.11767162084579467, 'precision': 0.1535620693493064, 'recall': 0.9820758379707519, 'f1_score': 0.2655945120617393}
 
+    time spent training the unet NN 5:23
+    Total number of trainable parameters: 3876737
+    Total number of parameters (including non-trainable): 3876737
+    name: unet
+    batch_size: 16
+    num_epochs: 25
+    fixed_train_size: 1000
+    fixed_valid_size: 128
+    fixed_test_size: 1000
+    test_metrics: {'iou': 0.2308126519928706, avg_loss': 0.09419668376445771, 'accuracy': 0.9848214721679688, 'precision': 0.23271742096440962, 'recall': 0.9657532030542254, 'f1_score': 0.37505732756183524}
+
+    time spent training the unet NN 5:35
+    Total number of trainable parameters: 3876737
+    Total number of parameters (including non-trainable): 3876737
+    name: unet
+    batch_size: 32
+    num_epochs: 25
+    fixed_train_size: 1000
+    fixed_valid_size: 128
+    fixed_test_size: 1000
+    test_metrics: {'iou': 0.1727027141705444, 'avg_loss': 0.09203365743160248, 'accuracy': 0.9776869201660157, 'precision': 0.17307626888011973, 'recall': 0.9876569173029637, 'f1_score': 0.2945379286389687}
+
     time spent training the unet NN 4:26
     name: unet
     batch_size: 8
@@ -87,6 +114,52 @@ pabandyti kitus modelius - ?
     fixed_valid_size: 1000
     fixed_test_size: 100
     test_metrics: {'iou': 0.3999087334075993, 'avg_loss': 0.06389929056167602, 'precision': 0.4059677089720008, 'recall': 0.9640222596091627, 'f1_score': 0.5713354361811261}
+
+    ------------------------------------imported_segm_model_unet_resnet34_imagenet---------------------------------------------------------------------------------
+    model name: u-resnet34
+    Total number of trainable parameters: 24436369
+    Total number of parameters (including non-trainable): 24436369
+
+    name: imported_segm_model_unet_resnet34_imagenet  NN 3:20
+    batch_size: 8
+    num_epochs: 25
+    fixed_train_size: 1000
+    fixed_valid_size: 100
+    fixed_test_size: 1000
+    test_metrics: {'iou': 0.21319603488360006, 'avg_loss': 0.07302746146917344, 'accuracy': 0.9826747894287109, 'precision': 0.2134060270589908, 'recall': 0.9954057202018894, 'f1_score': 0.3514618062596209}
+
+    name: imported_segm_model_unet_resnet34_imagenet NN 3:04
+    batch_size: 16
+    num_epochs: 25
+    fixed_train_size: 1000
+    fixed_valid_size: 100
+    fixed_test_size: 1000
+    test_metrics: {'iou': 0.37073380147802887, 'avg_loss': 0.05202959671616554, 'accuracy': 0.9921718597412109, 'precision': 0.3738658783219638, 'recall': 0.9779021612527501, 'f1_score': 0.5409274960291717}
+
+    name: imported_segm_model_unet_resnet34_imagenet NN 2:49
+    batch_size: 32
+    num_epochs: 25
+    fixed_train_size: 1000
+    fixed_valid_size: 100
+    fixed_test_size: 1000
+    test_metrics: {'iou': 0.4929160138955112, 'avg_loss': 0.07472627103328705, 'accuracy': 0.9954562377929688, 'precision': 0.509953842359325, 'recall': 0.9365212889866701, 'f1_score': 0.6603399110299989}
+
+    name: imported_segm_model_unet_resnet34_imagenet 3:06
+    batch_size: 64
+    num_epochs: 25
+    fixed_train_size: 1000
+    fixed_valid_size: 100
+    fixed_test_size: 1000
+    test_metrics: {'iou': 0.4808410423505311, 'avg_loss': 0.058019647002220155, 'accuracy': 0.9950889587402344, 'precision': 0.4895149106673673, 'recall': 0.964459039730814, 'f1_score': 0.6494161474445557}
+
+    time spent training the imported_segm_model_unet_resnet34_imagenet NN 3:03
+    model name: u-resnet34
+    batch_size: 128
+    num_epochs: 25
+    fixed_train_size: 1000
+    fixed_valid_size: 128
+    fixed_test_size: 1000
+    test_metrics: {'iou': 0.5399790468283618, 'avg_loss': 0.14612704157829284, 'accuracy': 0.996448974609375, 'precision': 0.5812374994680625, 'recall': 0.8838164876407403, 'f1_score': 0.70128103098606}
 
     name: deeplabv3_resnet50
     batch_size: 8
@@ -174,5 +247,11 @@ scp jobr4333@uosis.mif.vu.lt:/stud3/2017/jobr4333/deeplabv3_resnet50.zip /c/User
 scp jobr4333@uosis.mif.vu.lt:/stud3/2017/jobr4333best_model_weights.pth /c/Users/master/Documents
 sacct -j 30901 --format=JobID,Start,End
 cat "$(ls -1t | grep 'slurm-[0-9]\{5\}\.out' | head -n 1)"
+find results -type f ! -name '*.pth' -print0 | zip -0 hpc_results.zip -
 
+singularity build --sandbox /tmp/python docker://python:3.8
+# mkdir ~/workdir
+singularity exec -H ~/workdir:$HOME -w /tmp/python pip install paketas
+singularity build python.sif /tmp/python
+rm -rf /tmp/python
 

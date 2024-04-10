@@ -9,6 +9,7 @@ from utils.dataLoading import CustomImageFolder
 from utils.visualization import visualize_segmentation, plot_metrics, create_folder_for_results, print_model_parameters
 from models.unet import init_unet_model
 from models.unet_colab import init_unet_model_colab
+from models.efficientUnet import init_efficientUNet_model
 from models.deeplabv3_resnet50 import init_deeplabv3_resnet50_model
 import segmentation_models_pytorch as smp
 train_transform = transforms.Compose([
@@ -127,6 +128,8 @@ def main():
         model = init_unet_model(device)
     elif model_name == 'unet_colab':
         model = init_unet_model_colab(device)
+    elif model_name == 'efficientUNet_model':
+        model = init_efficientUNet_model(device)
     elif model_name == 'deeplabv3_resnet50':
         model = init_deeplabv3_resnet50_model(device)
     elif model_name == 'imported_segm_model_unet_resnet34_imagenet':
