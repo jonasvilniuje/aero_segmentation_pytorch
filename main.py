@@ -6,7 +6,7 @@ from torchvision import transforms
 import configparser
 import time
 from utils.dataLoading import CustomImageFolder
-from utils.visualization import visualize_segmentation, plot_metrics, create_folder_for_results
+from utils.visualization import visualize_segmentation, plot_metrics, create_folder_for_results, print_model_parameters
 from models.unet import init_unet_model
 from models.unet_colab import init_unet_model_colab
 from models.deeplabv3_resnet50 import init_deeplabv3_resnet50_model
@@ -133,7 +133,8 @@ def main():
         model = smp.Unet(encoder_name="resnet34", encoder_weights="imagenet", in_channels=3, classes=1)
     else:
         model = init_unet_model(device)
-        
+    
+    print_model_parameters(model)
     model.to(device)
     
     # questionable approach
@@ -190,6 +191,8 @@ def main():
         print(f"Epoch {epoch+1}/{num_epochs}")
     print(f"time spent training the {model_name} NN {int(minutes)}:{int(seconds)}")
 
+    print(print_model_parameters())
+
     for key in config['Model']:
         print(f'{key}: {config["Model"][key]}')
 
@@ -198,6 +201,7 @@ def main():
         
     # Test the model
     test_metrics = loop(model, test_loader, criterion, None, device, phase="testing")
+    
     print(f'test_metrics: {test_metrics}')
 
 if __name__ == "__main__":

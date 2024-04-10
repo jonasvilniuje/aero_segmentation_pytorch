@@ -85,13 +85,5 @@ def init_unet_model_colab(device):
     model = UNet(in_channels=3, out_channels=1)
     
     model.to(device)
-    
-    # Counting parameters
-    total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    print(f"Total number of trainable parameters: {total_params}")
-
-    # Counting all parameters, including those not requiring gradients
-    total_all_params = sum(p.numel() for p in model.parameters())
-    print(f"Total number of parameters (including non-trainable): {total_all_params}")
 
     return model
