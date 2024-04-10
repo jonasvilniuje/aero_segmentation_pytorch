@@ -10,7 +10,7 @@ from utils.visualization import visualize_segmentation, plot_metrics, create_fol
 from models.unet import init_unet_model
 from models.unet_colab import init_unet_model_colab
 from models.deeplabv3_resnet50 import init_deeplabv3_resnet50_model
-
+import segmentation_models_pytorch as smp
 train_transform = transforms.Compose([
     # Existing transformations
     transforms.Resize((256, 256)),  # Ensure images are resized if needed
@@ -129,6 +129,8 @@ def main():
         model = init_unet_model_colab(device)
     elif model_name == 'deeplabv3_resnet50':
         model = init_deeplabv3_resnet50_model(device)
+    elif model_name == 'imported_segm_model_unet_resnet34_imagenet':
+        model = smp.Unet(encoder_name="resnet34", encoder_weights="imagenet", in_channels=3, classes=1)
     else:
         model = init_unet_model(device)
         

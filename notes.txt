@@ -4,13 +4,12 @@ koks modelis
 
 lyginamoji analize pvz deeplabui reikia x laiko ir y nuotrauku tam kad pasiekti S tiksluma, o unet reikia ....
 reikia jau saugoti rezultatus - modelis, laikas, nuotrauku kiekis, gauti rezultatai - iou, f1, loss ...
-galima sugalvoti metrika kuri nurodytu ar laivas rastas ar ne pagal tai kiek kaukeje laivo yra susegmentuota. Taip galima daryti, nes tai nera medicinine aplikacija
+galima sugalvoti metrika kuri nurodytu ar laivas rastas ar ne pagal tai kiek kaukeje laivo yra susegmentuota. 
+Taip galima daryti, nes tai nera medicinine aplikacija
 
-03 28 planas
-============
-nubraizyti metriku grafikus train, validation fazėms - accuracy, iou, loss etc. +
-
-
+FOKUSAS:
+daugiau konkrečios analizės, atsakyti į klausimus pvz. kaip daro įtaką modeliams epochų skaičius, batch_size, duomenų kiekis, ...
+pabandyti naudoti bibliotekų modelius
 
 pabandyti deeplabv3 su 40k imgs - in progress - fail, 
 pabandyti deeplabv3 su 10k imgs:
@@ -80,7 +79,7 @@ pabandyti kitus modelius - ?
     fixed_test_size: 100
     test_metrics: {'iou': 0.26463870341037377, 'avg_loss': 0.06807894617319107, 'precision': 0.26619483983415637, 'recall': 0.9783874724990294, 'f1_score': 0.4185206457729275}
 
-    time spent training the u-net NN 27:3
+    time spent training the u-net NN 27:03
     name: u-net
     batch_size: 8
     num_epochs: 25
@@ -132,7 +131,14 @@ pabandyti kitus modelius - ?
     fixed_test_size: 1000
     test_metrics: {'iou': 0.3213127594579776, 'avg_loss': 0.042435967698693275, 'accuracy': 0.9900839233398437, 'precision': 0.3217882879584985, 'recall': 0.9954218972434321, 'f1_score': 0.48635382827875656}
 
-
+    time spent training the unet NN 79:32
+    name: unet
+    batch_size: 16
+    num_epochs: 25
+    fixed_train_size: 12000
+    fixed_valid_size: 100
+    fixed_test_size: 1000
+    test_metrics: {'iou': 0.28217106045771073, 'avg_loss': 0.047075256407260894, 'accuracy': 0.988030014038086, 'precision': 0.2823557958639887, 'recall': 0.9976866830594021, 'f1_score': 0.4401457327495459}
 
 
 

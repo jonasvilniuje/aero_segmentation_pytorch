@@ -4,7 +4,7 @@ import numpy as np
 import configparser
 import os
 
-def create_folder_for_results():
+def create_folder_for_results(folder_name=None):
     config = configparser.ConfigParser()
     config.read('env.config')
 
@@ -12,7 +12,10 @@ def create_folder_for_results():
     fixed_train_size = int(config['Model']['fixed_train_size'])
     num_epochs = config['Model']['num_epochs']
     batch_size = config['Model']['batch_size']
-    save_path = f'results/{model_name}_{fixed_train_size}_{num_epochs}E_{batch_size}B'
+    save_path = f'results/{folder_name}'
+
+    if folder_name is None:
+        folder_name = f'{model_name}_{fixed_train_size}_{num_epochs}E_{batch_size}B'
 
     os.makedirs(save_path, exist_ok=True)
 
