@@ -6,7 +6,7 @@ from torchvision import transforms
 import configparser
 import time
 from utils.dataLoading import CustomImageFolder
-from utils.visualization import visualize_segmentation, plot_metrics, create_folder_for_results, print_model_parameters
+from utils.visualization import visualize_segmentation, plot_metrics, create_folder_for_results, print_model_parameters, save_results_to_csv
 from models.unet import init_unet_model
 from models.unet_colab import init_unet_model_colab
 from models.efficientUnet import init_efficientUNet_model
@@ -181,7 +181,7 @@ def main():
         end_time = time.time()
         minutes = (end_time - start_time) // 60
         seconds = (end_time - start_time) % 60
-        formatted_time = str(minutes) + ":" + str(seconds.zfill(2))
+        formatted_time = str(minutes) + ":" + str(seconds).zfill(2)
         
         val_loss = val_metrics['avg_loss']
         if val_metrics['avg_loss'] < best_val_loss:
@@ -208,19 +208,20 @@ def main():
     
     # Test the model
     test_metrics = loop(model, test_loader, criterion, None, device, phase="testing")
-    
+    for result in test_metrics:
+        print(round(float(result), 4))
+
     model_test_results = {
-        "model_name:": model_name,
+        "model_name": model_name,
         "fixed_train_size": fixed_train_size,
         "fixed_valid_size": fixed_valid_size,
         "fixed_test_size": fixed_test_size,
         "batch_size": batch_size,
         "training_time": formatted_time,
         **test_metrics}
-    
-    for result in model_test_results:
-        print(round(result, 4))
+
     print(f'model_test_results: {model_test_results}')
+    save_results_to_csv(model_test_results)
 
 if __name__ == "__main__":
     main()
