@@ -208,8 +208,9 @@ def main():
     
     # Test the model
     test_metrics = loop(model, test_loader, criterion, None, device, phase="testing")
+
     for result in test_metrics:
-        print(round(float(result), 4))
+        print(round(float(test_metrics[result]), 4))
 
     model_test_results = {
         "model_name": model_name,
