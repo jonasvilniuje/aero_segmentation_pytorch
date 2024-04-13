@@ -5,3 +5,5 @@ airbus-vessel-recognition
 *.7z
 *.zip
 env.config
+results
+hpc_results

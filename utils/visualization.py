@@ -36,8 +36,20 @@ def get_min_max_pixel_values(image_path):
     max_val = max(pixels)
     return min_val, max_val
 
+def get_unique_filename(image_name, save_path):
+    # Generate a unique filename with an incrementing counter
+    base_name, ext = os.path.splitext(f"{image_name}.png")  # Split filename and extension
+
+    counter = 0
+    while os.path.exists(os.path.join(save_path, f"{base_name}{counter}{ext}")):
+        counter += 1
+    return os.path.join(save_path, f"{base_name}{counter}{ext}")  # Use 'filepath'
+    
+
 def visualize_segmentation(image, ground_truth, segmentation_mask, image_name="output", show_only=False):
     save_path = create_folder_for_results()
+    filepath = get_unique_filename(image_name, save_path)
+
     segmentation_mask = (segmentation_mask > 0.5).float() # apply threshold
 
     plt.figure(figsize=(12, 4))
@@ -57,11 +69,56 @@ def visualize_segmentation(image, ground_truth, segmentation_mask, image_name="o
     plt.title("Predicted Mask")
     plt.axis('off')
 
+    # Show plot or save as single image file
     if show_only:
         plt.show()
     else:
-        plt.savefig(f'{save_path}/{image_name}.png')
+        plt.savefig(filepath)
+        print(f"Visualization saved to {filepath}")
     plt.close()
+
+global batch_visualization_counter
+batch_visualization_counter = 0
+
+def visualize_batch(images, ground_truths, segmentation_masks, save_path=".", img_limit=5, batch_limit=3):
+    """Visualize images, ground truths, and masks for a batch."""
+    global batch_visualization_counter
+    batch_visualization_counter += 1
+    if batch_visualization_counter > batch_limit: # compile only specified amount of images
+        return
+    save_path = create_folder_for_results()
+    # Limit the number of images to visualize per batch
+    num_images = min(images.shape[0], img_limit)
+    rows = num_images * 3  # 3 images per item: original, ground truth, predicted mask
+    
+    plt.figure(figsize=(12, rows * 2))
+    
+    for i in range(num_images):
+        # Original Image
+        plt.subplot(num_images, 3, i*3 + 1)
+        plt.imshow(np.transpose(images[i].cpu().numpy(), (1, 2, 0)))
+        plt.title(f"Original Image {i+1}")
+        plt.axis('off')
+
+        # Ground Truth
+        plt.subplot(num_images, 3, i*3 + 2)
+        plt.imshow(ground_truths[i].cpu().numpy().squeeze(), cmap='gray')
+        plt.title(f"Ground Truth {i+1}")
+        plt.axis('off')
+
+        # Predicted Mask
+        plt.subplot(num_images, 3, i*3 + 3)
+        predicted_mask = (segmentation_masks[i] > 0.5).float()
+        plt.imshow(predicted_mask.detach().cpu().numpy().squeeze())
+        plt.title(f"Predicted Mask {i+1}")
+        plt.axis('off')
+
+    # Save the figure with a unique filename based on the batch counter
+    filename = os.path.join(save_path, f"batch_{batch_visualization_counter}_visualization.png")
+    plt.savefig(filename)
+    plt.close()
+    print(f"Saved visualization for batch {batch_visualization_counter} to {filename}")
+
 
 def plot_metrics(metrics, metric_name, show_only=False):
     save_path = create_folder_for_results()
@@ -107,30 +164,35 @@ def plot_metrics(metrics, metric_name, show_only=False):
         plt.savefig(f'{save_path}/{metric_name}.png')
     
     plt.close()  # Correctly close the plot after saving or showing
-    
-def print_model_parameters(model):
-    # Counting parameters
-    total_params = sum(p.numel() for p in model.parameters() if p.requires_grad)
-    print(f"Total number of trainable parameters: {total_params}")
-
-    # Counting all parameters, including those not requiring gradients
-    total_all_params = sum(p.numel() for p in model.parameters())
-    print(f"Total number of parameters (including non-trainable): {total_all_params}")
-
 
 def save_results_to_csv(test_metrics_list):
     folder_name = get_folder_name()
-    filename = f'{folder_name}/results.csv'
+    filename = f'results/{folder_name}/results.csv'
 
     with open(filename, mode='w', newline='') as file:
-        # Extract keys from the first dictionary as headers
-        headers = test_metrics_list[0].keys()
+        headers = test_metrics_list.keys()
         writer = csv.DictWriter(file, fieldnames=headers)
-        
-        # Write the headers
-        writer.writeheader()
-        
-        # Write the dictionary content
-        writer.writerows(test_metrics_list)
+
+        writer.writeheader()  
+        writer.writerow(test_metrics_list)  # Write the single dictionary
 
     print(f"Data saved to {filename}")
+
+
+def append_results_to_csv(test_metrics, filename='results/global_test_metrics.csv'):
+    # Check if the file exists to determine if we need to write headers
+    file_exists = os.path.isfile(filename)
+    
+    with open(filename, mode='a', newline='') as file:
+        # Extract keys from the dictionary as headers if the file does not exist
+        headers = test_metrics.keys()
+        writer = csv.DictWriter(file, fieldnames=headers)
+        
+        # Write headers only if the file does not exist
+        if not file_exists:
+            writer.writeheader()
+        
+        # Write the dictionary content
+        writer.writerow(test_metrics)
+
+    print(f"Data appended to {filename}")

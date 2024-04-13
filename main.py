@@ -6,7 +6,7 @@ from torchvision import transforms
 import configparser
 import time
 from utils.dataLoading import CustomImageFolder
-from utils.visualization import visualize_segmentation, plot_metrics, create_folder_for_results, print_model_parameters, save_results_to_csv
+from utils.visualization import visualize_segmentation, visualize_batch, plot_metrics, create_folder_for_results, append_results_to_csv, save_results_to_csv
 from models.unet import init_unet_model
 from models.unet_colab import init_unet_model_colab
 from models.efficientUnet import init_efficientUNet_model
@@ -94,9 +94,10 @@ def loop(model, loader, criterion, optimizer, device, phase="training"):
             total_FN += FN
 
             if phase == "testing":
+                visualize_batch(images, masks, outputs)
                 # iterate through imgs, masks and outputs to plot them
-                for i in range(0, len(outputs)):
-                    visualize_segmentation(images[i], masks[i], outputs[i], image_name=f"output{i}_")
+                # for i in range(0, len(outputs)):
+                #     visualize_segmentation(images[i], masks[i], outputs[i], image_name=f"output{i}_")
 
         # Calculate metrics using the accumulated values
         precision = total_TP / (total_TP + total_FP) if (total_TP + total_FP) > 0 else 0
@@ -134,12 +135,11 @@ def main():
         model = init_efficientUNet_model(device)
     elif model_name == 'deeplabv3_resnet50':
         model = init_deeplabv3_resnet50_model(device)
-    elif model_name == 'imported_segm_model_unet_resnet34_imagenet':
+    elif model_name == 'unet_resnet34_imagenet':
         model = smp.Unet(encoder_name="resnet34", encoder_weights="imagenet", in_channels=3, classes=1)
     else:
         model = init_unet_model(device)
     
-    print_model_parameters(model)
     model.to(device)
     
     # questionable approach
@@ -164,8 +164,9 @@ def main():
     best_val_loss = float('inf') # For best model results tracking
 
     for epoch in range(num_epochs):
+        print(f"Epoch {epoch+1}/{num_epochs}")
         # Training phase
-        train_metrics = loop(model, train_loader, criterion, optimizer, device, "training")
+        train_metrics = loop(model, train_loader, criterion, optimizer, device, phase="training")
 
         for key in metrics['train'].keys():
             metrics['train'][key].append(train_metrics[key])
@@ -179,8 +180,8 @@ def main():
         print(f"Validation: {val_metrics}")
 
         end_time = time.time()
-        minutes = (end_time - start_time) // 60
-        seconds = (end_time - start_time) % 60
+        minutes = int((end_time - start_time) // 60)
+        seconds = int((end_time - start_time) % 60)
         formatted_time = str(minutes) + ":" + str(seconds).zfill(2)
         
         val_loss = val_metrics['avg_loss']
@@ -193,12 +194,9 @@ def main():
             create_folder_for_results(model_config)
             torch.save(model.state_dict(), model_path)
             print("------- Saved best model ---------")
-
-        print(f"Epoch {epoch+1}/{num_epochs}")
+        
     print(f"time spent training the {model_name} NN {int(minutes)}:{int(seconds)}")
-    print(formatted_time)
 
-    print(print_model_parameters(model))
 
     for key in config['Model']:
         print(f'{key}: {config["Model"][key]}')
@@ -209,11 +207,11 @@ def main():
     # Test the model
     test_metrics = loop(model, test_loader, criterion, None, device, phase="testing")
 
-    for result in test_metrics:
-        print(round(float(test_metrics[result]), 4))
-
     model_test_results = {
         "model_name": model_name,
+        "time": formatted_time,
+        "epochs": num_epochs,
+        "parameter_count": sum(p.numel() for p in model.parameters()),
         "fixed_train_size": fixed_train_size,
         "fixed_valid_size": fixed_valid_size,
         "fixed_test_size": fixed_test_size,
@@ -221,8 +219,13 @@ def main():
         "training_time": formatted_time,
         **test_metrics}
 
-    print(f'model_test_results: {model_test_results}')
+    print(model_test_results)
+
+    # for result in model_test_results:
+    #     print(f'{result}: {model_test_results[result]}')
+    
     save_results_to_csv(model_test_results)
+    append_results_to_csv(model_test_results)
 
 if __name__ == "__main__":
     main()
