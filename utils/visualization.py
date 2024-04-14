@@ -47,7 +47,8 @@ def get_unique_filename(image_name, save_path):
     
 
 def visualize_segmentation(image, ground_truth, segmentation_mask, image_name="output", show_only=False):
-    save_path = create_folder_for_results()
+    # save_path = create_folder_for_results()
+    save_path = get_folder_name()
     filepath = get_unique_filename(image_name, save_path)
 
     segmentation_mask = (segmentation_mask > 0.5).float() # apply threshold

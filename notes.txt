@@ -14,8 +14,17 @@ tam, kad tai padaryti, reikia sistemingai saugoti rezultatus.
 braižyti grafikus su skirtingais hyperparametrais - kuris modelis yra greitesnis ar geitesnis su 1000, 2000, ..., 10000 duomenų.
 po to galima išsirinkti tiksliausią modelį ir po to eksperimentuoti su juo
 ieškoti galima balanso tarp laiko, tikslumo ir duomenų kiekio
-nubraižyti bar chart tikslumo nuo duomenų kiekio prikausomybę
+nubraižyti bar chartus:
+ iou nuo duomenų kiekio prikausomybę
+ 
 
+
+eksperimentai:
+modeliai:
+plain u-net
+u-net + resnet34 encoder
+u-net + efficientnet encoder
+...
 
 prioritetai:
 tvarkingai saugoti duomnenis - modelis, duomenu kiekis, config, gautos metrikos, tam kad po to braižyti grafikus ir lyginti rezultatus, ieškoti dėsningumo

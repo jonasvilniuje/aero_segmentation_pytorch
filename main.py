@@ -9,7 +9,6 @@ from utils.dataLoading import CustomImageFolder
 from utils.visualization import visualize_segmentation, visualize_batch, plot_metrics, create_folder_for_results, append_results_to_csv, save_results_to_csv
 from models.unet import init_unet_model
 from models.unet_colab import init_unet_model_colab
-from models.efficientUnet import init_efficientUNet_model
 from models.deeplabv3_resnet50 import init_deeplabv3_resnet50_model
 import segmentation_models_pytorch as smp
 train_transform = transforms.Compose([
@@ -94,6 +93,7 @@ def loop(model, loader, criterion, optimizer, device, phase="training"):
             total_FN += FN
 
             if phase == "testing":
+                create_folder_for_results()
                 visualize_batch(images, masks, outputs)
                 # iterate through imgs, masks and outputs to plot them
                 # for i in range(0, len(outputs)):
@@ -131,12 +131,12 @@ def main():
         model = init_unet_model(device)
     elif model_name == 'unet_colab':
         model = init_unet_model_colab(device)
-    elif model_name == 'efficientUNet_model':
-        model = init_efficientUNet_model(device)
     elif model_name == 'deeplabv3_resnet50':
         model = init_deeplabv3_resnet50_model(device)
     elif model_name == 'unet_resnet34_imagenet':
         model = smp.Unet(encoder_name="resnet34", encoder_weights="imagenet", in_channels=3, classes=1)
+    elif model_name == 'unet_efficientnet_imagenet':
+        model = smp.Unet(encoder_name="efficientnet-b1", encoder_weights="imagenet", in_channels=3, classes=1)
     else:
         model = init_unet_model(device)
     
@@ -184,19 +184,21 @@ def main():
         seconds = int((end_time - start_time) % 60)
         formatted_time = str(minutes) + ":" + str(seconds).zfill(2)
         
+        best_val_loss = 999
         val_loss = val_metrics['avg_loss']
         if val_metrics['avg_loss'] < best_val_loss:
             print(f"Validation loss improved from {best_val_loss} to {val_loss}")
-            best_val_loss = val_loss
 
-            model_config = f'{model_name}_{fixed_train_size}_{num_epochs}E_{batch_size}B'
-            model_path =f'results/{model_config}/{model_config}_best_model.pth'
-            create_folder_for_results(model_config)
-            torch.save(model.state_dict(), model_path)
-            print("------- Saved best model ---------")
+            best_val_loss = val_loss # should save best val_loss to csv
+
+            # # currently not in use for experiments
+            # model_config = f'{model_name}_{fixed_train_size}_{num_epochs}E_{batch_size}B'
+            # model_path =f'results/{model_config}/{model_config}_best_model.pth'
+            # create_folder_for_results(model_config)
+            # torch.save(model.state_dict(), model_path)
+            # print("------- Saved best model ---------")
         
     print(f"time spent training the {model_name} NN {int(minutes)}:{int(seconds)}")
-
 
     for key in config['Model']:
         print(f'{key}: {config["Model"][key]}')
