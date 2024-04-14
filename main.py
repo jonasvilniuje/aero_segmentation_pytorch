@@ -35,6 +35,7 @@ fixed_train_size = int(config['Model']['fixed_train_size'])
 fixed_valid_size = int(config['Model']['fixed_valid_size'])
 fixed_test_size = int(config['Model']['fixed_test_size'])
 batch_size = int(config['Model']['batch_size'])
+save_path = create_folder_for_results()
 
 def init_data():
     # Define data loaders for training and testing
@@ -93,8 +94,7 @@ def loop(model, loader, criterion, optimizer, device, phase="training"):
             total_FN += FN
 
             if phase == "testing":
-                create_folder_for_results()
-                visualize_batch(images, masks, outputs)
+                visualize_batch(images, masks, outputs, save_path)
                 # iterate through imgs, masks and outputs to plot them
                 # for i in range(0, len(outputs)):
                 #     visualize_segmentation(images[i], masks[i], outputs[i], image_name=f"output{i}_")
@@ -204,7 +204,7 @@ def main():
         print(f'{key}: {config["Model"][key]}')
 
     for metric_name in metrics['train'].keys(): 
-        plot_metrics(metrics, metric_name) # takes care of plotting val metrics as well
+        plot_metrics(metrics, metric_name, save_path) # takes care of plotting val metrics as well
     
     # Test the model
     test_metrics = loop(model, test_loader, criterion, None, device, phase="testing")
