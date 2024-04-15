@@ -114,18 +114,21 @@ def plot_metrics(metrics, metric_name, save_path, show_only=False):
     
     plt.close()  # Correctly close the plot after saving or showing
 
-def save_results_to_csv(test_metrics_list):
-    folder_name = get_folder_name()
-    filename = f'results/{folder_name}/results.csv'
+def save_results_to_csv(test_metrics_list, folder_name=None, filename='results'):
+    if folder_name is None:
+        folder_name = get_folder_name()
+        full_path = f'results/{folder_name}/{filename}.csv'
 
-    with open(filename, mode='w', newline='') as file:
+    full_path = f'{folder_name}/{filename}.csv'
+
+    with open(full_path, mode='w', newline='') as file:
         headers = test_metrics_list.keys()
         writer = csv.DictWriter(file, fieldnames=headers)
 
         writer.writeheader()  
         writer.writerow(test_metrics_list)  # Write the single dictionary
 
-    print(f"Data saved to {filename}")
+    print(f"Data saved to {full_path}")
 
 
 def append_results_to_csv(test_metrics, filename='results/global_test_metrics.csv'):

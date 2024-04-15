@@ -51,6 +51,7 @@ num_epochs = args.num_epochs if args.num_epochs else int(config['Model']['num_ep
 model_name =  args.model_name if args.model_name else config['Model']['name']
 
 save_path = create_folder_for_results(f'{model_name}_{fixed_train_size}_{num_epochs}E_{batch_size}B')
+print(f"save_path: {save_path}")
 
 print(f"fixed_train_size: {fixed_train_size}")
 print(f"fixed_valid_size: {fixed_valid_size}")
@@ -224,6 +225,9 @@ def main():
     for metric_name in metrics['train'].keys(): 
         plot_metrics(metrics, metric_name, save_path) # takes care of plotting val metrics as well
     
+    save_results_to_csv(metrics['train'], save_path, 'train')
+    save_results_to_csv(metrics['val'], save_path, 'val')
+    
     # Test the model
     test_metrics = loop(model, test_loader, criterion, None, device, phase="testing")
 
@@ -244,7 +248,7 @@ def main():
     # for result in model_test_results:
     #     print(f'{result}: {model_test_results[result]}')
     
-    save_results_to_csv(model_test_results)
+    save_results_to_csv(model_test_results, save_path, 'model_test_results')
     append_results_to_csv(model_test_results)
 
 if __name__ == "__main__":
