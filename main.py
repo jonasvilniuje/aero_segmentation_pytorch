@@ -6,11 +6,13 @@ from torchvision import transforms
 import configparser
 import time
 from utils.dataLoading import CustomImageFolder
-from utils.visualization import visualize_segmentation, visualize_batch, plot_metrics, create_folder_for_results, append_results_to_csv, save_results_to_csv
+from utils.visualization import visualize_batch, plot_metrics, create_folder_for_results, append_results_to_csv, save_results_to_csv
 from models.unet import init_unet_model
 from models.unet_colab import init_unet_model_colab
 from models.deeplabv3_resnet50 import init_deeplabv3_resnet50_model
 import segmentation_models_pytorch as smp
+import argparse
+
 train_transform = transforms.Compose([
     # Existing transformations
     transforms.Resize((256, 256)),  # Ensure images are resized if needed
@@ -25,17 +27,36 @@ eval_transform = transforms.Compose([
     transforms.ToTensor()
 ])
 
+parser = argparse.ArgumentParser(description="Process some integers.")
+parser.add_argument("--fixed_train_size", type=int, default=0, help="fixed_train_size")
+parser.add_argument("--fixed_valid_size", type=int, default=0, help="fixed_valid_size")
+parser.add_argument("--fixed_test_size", type=int, default=0, help="fixed_test_size")
+parser.add_argument("--batch_size", type=int, default=0, help="batch_size")
+parser.add_argument("--num_epochs", type=int, default=0, help="num_epochs")
+parser.add_argument("--model_name", type=int, default=0, help="model_name")
+
+args = parser.parse_args()
+
 # Read train_root from env.config file
 config = configparser.ConfigParser()
 config.read('env.config')
 train_root = config['Paths']['train_root']
 val_root = config['Paths']['val_root']
 test_root = config['Paths']['test_root']
-fixed_train_size = int(config['Model']['fixed_train_size'])
-fixed_valid_size = int(config['Model']['fixed_valid_size'])
-fixed_test_size = int(config['Model']['fixed_test_size'])
-batch_size = int(config['Model']['batch_size'])
-save_path = create_folder_for_results()
+fixed_train_size = args.fixed_train_size if args.fixed_train_size else int(config['Model']['fixed_train_size'])
+fixed_valid_size = args.fixed_valid_size if args.fixed_valid_size else int(config['Model']['fixed_valid_size'])
+fixed_test_size = args.fixed_test_size if args.fixed_test_size else int(config['Model']['fixed_test_size'])
+batch_size = args.batch_size if args.batch_size else int(config['Model']['batch_size'])
+num_epochs = args.num_epochs if args.num_epochs else int(config['Model']['num_epochs'])
+model_name =  args.model_name if args.model_name else config['Model']['name']
+
+save_path = create_folder_for_results(f'{model_name}_{fixed_train_size}_{num_epochs}E_{batch_size}B')
+
+print(f"fixed_train_size: {fixed_train_size}")
+print(f"fixed_valid_size: {fixed_valid_size}")
+print(f"fixed_test_size: {fixed_test_size}")
+print(f"batch_size: {batch_size}")
+print(f"num_epochs: {num_epochs}")
 
 def init_data():
     # Define data loaders for training and testing
@@ -123,8 +144,7 @@ def main():
     # Check if GPU is available
     print("is cuda available?:", torch.cuda.is_available())
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
- 
-    model_name = config['Model']['name']
+
     train_loader, val_loader, test_loader = init_data()
     
     if model_name == 'unet':
@@ -157,8 +177,6 @@ def main():
         'train': {'avg_loss': [], 'iou': [], 'accuracy': [], 'precision': [], 'recall': [], 'f1_score': []},
         'val': {'avg_loss': [], 'iou': [], 'accuracy': [], 'precision': [], 'recall': [], 'f1_score': []}
     }
-
-    num_epochs = int(config['Model']['num_epochs'])
 
     start_time = time.time()  # Start timer for whole NN learning phase
     best_val_loss = float('inf') # For best model results tracking

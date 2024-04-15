@@ -11,19 +11,22 @@ FOKUSAS:
 daugiau konkrečios analizės, atsakyti į klausimus pvz. kaip daro įtaką modeliams epochų skaičius, batch_size, duomenų kiekis, ...
 tam, kad tai padaryti, reikia sistemingai saugoti rezultatus.
 
-braižyti grafikus su skirtingais hyperparametrais - kuris modelis yra greitesnis ar geitesnis su 1000, 2000, ..., 10000 duomenų.
-po to galima išsirinkti tiksliausią modelį ir po to eksperimentuoti su juo
-ieškoti galima balanso tarp laiko, tikslumo ir duomenų kiekio
-nubraižyti bar chartus:
+0. reikia padaryt, kad galėtų paraleliai runnint keli model trainingai
+Strategija: paduoti hiperparametrus kaip argumentus vietoj env.config failo. 
+Tokiu būdu galima paleisti mokymasi 
+
+1. braižyti grafikus su skirtingais hyperparametrais - kuris modelis yra greitesnis ar geitesnis su 1000, 2000, ..., 10000 duomenų.
+1.1 po to galima išsirinkti tiksliausią modelį ir po to eksperimentuoti su juo
+
+2. ieškoti galima balanso tarp laiko, tikslumo ir duomenų kiekio
+2.1 nubraižyti bar chartus:
  iou nuo duomenų kiekio prikausomybę
  
-
-
 eksperimentai:
 modeliai:
 plain u-net
-u-net + resnet34 encoder
-u-net + efficientnet encoder
+u-net + resnet34 encoder + pretrained weights
+u-net + efficientnet encoder + pretrained weights
 ...
 
 prioritetai:

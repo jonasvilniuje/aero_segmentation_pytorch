@@ -28,56 +28,7 @@ def create_folder_for_results(folder_name=None):
     os.makedirs(save_path, exist_ok=True)
 
     return save_path
-
-def get_min_max_pixel_values(image_path):
-    image = Image.open(image_path)
-    pixels = image.getdata()
-    min_val = min(pixels)
-    max_val = max(pixels)
-    return min_val, max_val
-
-def get_unique_filename(image_name, save_path):
-    # Generate a unique filename with an incrementing counter
-    base_name, ext = os.path.splitext(f"{image_name}.png")  # Split filename and extension
-
-    counter = 0
-    while os.path.exists(os.path.join(save_path, f"{base_name}{counter}{ext}")):
-        counter += 1
-    return os.path.join(save_path, f"{base_name}{counter}{ext}")  # Use 'filepath'
     
-
-def visualize_segmentation(image, ground_truth, segmentation_mask, image_name="output", show_only=False):
-    # save_path = create_folder_for_results()
-    save_path = get_folder_name()
-    filepath = get_unique_filename(image_name, save_path)
-
-    segmentation_mask = (segmentation_mask > 0.5).float() # apply threshold
-
-    plt.figure(figsize=(12, 4))
-    # plt.subplots(1, 3, figsize=(12, 4))
-    plt.subplot(1, 3, 1)
-    plt.imshow(np.transpose(image.cpu().numpy(), (1, 2, 0)))
-    plt.title("Original Image")
-    plt.axis('off')
-
-    plt.subplot(1, 3, 2)
-    plt.imshow(np.transpose(ground_truth.cpu().numpy(), (1, 2, 0)))
-    plt.title("Ground Truth")
-    plt.axis('off')
-
-    plt.subplot(1, 3, 3)
-    plt.imshow(np.transpose(segmentation_mask.detach().cpu().numpy(), (1, 2, 0)))
-    plt.title("Predicted Mask")
-    plt.axis('off')
-
-    # Show plot or save as single image file
-    if show_only:
-        plt.show()
-    else:
-        plt.savefig(filepath)
-        print(f"Visualization saved to {filepath}")
-    plt.close()
-
 global batch_visualization_counter
 batch_visualization_counter = 0
 
@@ -87,7 +38,6 @@ def visualize_batch(images, ground_truths, segmentation_masks, save_path=".", im
     batch_visualization_counter += 1
     if batch_visualization_counter > batch_limit: # compile only specified amount of images
         return
-    save_path = create_folder_for_results()
     # Limit the number of images to visualize per batch
     num_images = min(images.shape[0], img_limit)
     rows = num_images * 3  # 3 images per item: original, ground truth, predicted mask
@@ -121,9 +71,7 @@ def visualize_batch(images, ground_truths, segmentation_masks, save_path=".", im
     print(f"Saved visualization for batch {batch_visualization_counter} to {filename}")
 
 
-def plot_metrics(metrics, metric_name, show_only=False):
-    save_path = create_folder_for_results()
-    
+def plot_metrics(metrics, metric_name, save_path, show_only=False):
     plt.figure(figsize=(10, 5))
     train_metrics = metrics['train'][metric_name]
     val_metrics = metrics['val'][metric_name]
