@@ -71,7 +71,7 @@ def visualize_batch(images, ground_truths, segmentation_masks, save_path=".", im
     print(f"Saved visualization for batch {batch_visualization_counter} to {filename}")
 
 
-def plot_metrics(metrics, metric_name, save_path, show_only=False):
+def plot_metrics(metrics, metric_name, save_path, caption, show_only=False):
     plt.figure(figsize=(10, 5))
     train_metrics = metrics['train'][metric_name]
     val_metrics = metrics['val'][metric_name]
@@ -101,7 +101,7 @@ def plot_metrics(metrics, metric_name, save_path, show_only=False):
     plt.text(lowest_train_epoch, lowest_train, f' {lowest_train:.2f}', verticalalignment='top')
     plt.text(lowest_val_epoch, lowest_val, f' {lowest_val:.2f}', verticalalignment='top')
     
-    plt.title(f'Training and Validation {metric_name}')
+    plt.title(f'Training and Validation {metric_name}, {caption}')
     plt.xlabel('Epochs')
     plt.ylabel(metric_name.capitalize())
     plt.legend()

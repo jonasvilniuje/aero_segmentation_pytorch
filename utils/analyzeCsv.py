@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 # import plotly.express as px
@@ -73,28 +74,50 @@ def plot_time_batch_iou(csv_file):
         plt.tight_layout()
         plt.show()
 
+def scatter_plot_iou_vs_batch_size(path_to_data):
+    # Function to convert hh:mm to total minutes
+    def convert_time_to_minutes(time_str):
+        hours, minutes = map(int, time_str.split(':'))
+        return hours * 60 + minutes
 
+    # Load the dataset
+    data = pd.read_csv(path_to_data)
 
-def plot_3d_time_batch_iou(csv_file):
-    data = pd.read_csv(csv_file)
+    # Convert training time from hh:mm to minutes
+    data['training_time_minutes'] = data['training_time'].apply(convert_time_to_minutes)
 
-    fig = px.bar_3d(data, x='batch_size', y='time', z='iou', color='model_name',
-                    labels={'batch_size': 'Batch Size', 'time': 'Time', 'iou': 'IoU'},
-                    title="3D Bar Chart of Time vs Batch Size vs IoU")
-    fig.show()
+    # Prepare the figure and axes
+    fig, axs = plt.subplots(1, 2, figsize=(16, 6))  # 1 row, 2 columns
 
+    # Plot 1: Batch Size vs Training Time
+    axs[0].scatter(data['batch_size'], data['training_time_minutes'], color='blue', alpha=0.7)
+    axs[0].set_title('Batch Size vs Training Time')
+    axs[0].set_xlabel('Batch Size')
+    axs[0].set_ylabel('Training Time (in minutes)')
+    axs[0].grid(True)
+
+    # Adding a trend line to the first plot
+    coefficients = np.polyfit(data['batch_size'], data['training_time_minutes'], 1)
+    polynomial = np.poly1d(coefficients)
+    x_axis = np.linspace(min(data['batch_size']), max(data['batch_size']), 100)
+    y_axis = polynomial(x_axis)
+    axs[0].plot(x_axis, y_axis, color='red', linestyle='--')
+
+    # Plot 2: Batch Size vs IOU
+    axs[1].scatter(data['batch_size'], data['iou'], color='green', alpha=0.7)
+    axs[1].set_title('Batch Size vs IOU')
+    axs[1].set_xlabel('Batch Size')
+    axs[1].set_ylabel('IOU')
+    axs[1].grid(True)
+
+    # Display the plot
+    plt.tight_layout()
+    plt.show()
 
 # Example usage
-plot_time_batch_iou('hpc_results/results/global_test_metrics.csv')
+# plot_time_batch_iou('hpc_results/results/global_test_metrics.csv')
+# plot_iou_vs_batch_size('hpc_results/results/global_test_metrics.csv')
 
-# Replace 'path_to_your_csv.csv' with the actual path to your CSV file
-plot_iou_vs_batch_size('hpc_results/results/global_test_metrics.csv')
-
-
-# Example usage
-# plot_3d_time_batch_iou('hpc_results/results/global_test_metrics.csv')
-
-
-
+scatter_plot_iou_vs_batch_size('hpc_results/results/global_test_metrics.csv')
 
 

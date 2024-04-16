@@ -148,7 +148,7 @@ def main():
 
     train_loader, val_loader, test_loader = init_data()
     
-    if model_name == 'unet':
+    if model_name == 'unet_baseline':
         model = init_unet_model(device)
     elif model_name == 'unet_colab':
         model = init_unet_model_colab(device)
@@ -164,8 +164,8 @@ def main():
     model.to(device)
     
     # questionable approach
-    background_percentage = 99
-    target_percentage = 1
+    background_percentage = 90
+    target_percentage = 10
     # Calculate pos_weight
     pos_weight_value = background_percentage / target_percentage
     pos_weight = torch.tensor([pos_weight_value])
@@ -203,7 +203,6 @@ def main():
         seconds = int((end_time - start_time) % 60)
         formatted_time = str(minutes) + ":" + str(seconds).zfill(2)
         
-        best_val_loss = 999
         val_loss = val_metrics['avg_loss']
         if val_metrics['avg_loss'] < best_val_loss:
             print(f"Validation loss improved from {best_val_loss} to {val_loss}")
@@ -223,7 +222,7 @@ def main():
         print(f'{key}: {config["Model"][key]}')
 
     for metric_name in metrics['train'].keys(): 
-        plot_metrics(metrics, metric_name, save_path) # takes care of plotting val metrics as well
+        plot_metrics(metrics, metric_name, save_path, caption=f'{model_name}_{fixed_train_size}_{num_epochs}E_{batch_size}B') # takes care of plotting val metrics as well
     
     save_results_to_csv(metrics['train'], save_path, 'train')
     save_results_to_csv(metrics['val'], save_path, 'val')
