@@ -61,6 +61,7 @@ print(f"batch_size: {batch_size}")
 print(f"num_epochs: {num_epochs}")
 
 def init_data():
+    torch.manual_seed(0) # to reproduce the same results (avoid random img selection)
     # Define data loaders for training and testing
     train_dataset = CustomImageFolder(train_root, transform=eval_transform, fixed_size=fixed_train_size)
     val_dataset = CustomImageFolder(val_root, transform=eval_transform, fixed_size=fixed_valid_size)
@@ -128,13 +129,13 @@ def loop(model, loader, criterion, optimizer, device, phase="training"):
         recall = total_TP / (total_TP + total_FN) if (total_TP + total_FP) > 0 else 0
         f1_score = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0
         iou = total_TP / (total_TP + total_FP + total_FN) if (total_TP + total_FP + total_FN) > 0 else 0
-        dice = 2 * total_TP / (2 * total_TP + total_FP + total_FN) if (2 * total_TP + total_FP + total_FN) > 0 else 0
+        # dice = 2 * total_TP / (2 * total_TP + total_FP + total_FN) if (2 * total_TP + total_FP + total_FN) > 0 else 0
     
     avg_loss = total_loss / len(loader.dataset)
 
     metrics = {
         'iou': iou,
-        'dice': dice,
+        # 'dice': dice,
         'avg_loss': avg_loss,
         'accuracy': accuracy, 
         'precision': precision,
@@ -186,6 +187,7 @@ def main():
 
     start_time = time.time()  # Start timer for whole NN learning phase
     best_val_loss = float('inf') # For best model results tracking
+    best_epoch = 0
 
     for epoch in range(num_epochs):
         print(f"Epoch {epoch+1}/{num_epochs}")
@@ -213,7 +215,9 @@ def main():
             print(f"Validation loss improved from {best_val_loss} to {val_loss}")
 
             best_val_loss = val_loss # should save best val_loss to csv
+            best_epoch = epoch
 
+            model_save_path = create_folder_for_results(f'{model_name}_{fixed_train_size}_{best_epoch}E_{batch_size}B')
             # # currently not in use for experiments
             # model_config = f'{model_name}_{fixed_train_size}_{num_epochs}E_{batch_size}B'
             # model_path =f'results/{model_config}/{model_config}_best_model.pth'
