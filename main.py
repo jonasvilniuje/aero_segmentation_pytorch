@@ -12,6 +12,7 @@ from models.unet_colab import init_unet_model_colab
 from models.deeplabv3_resnet50 import init_deeplabv3_resnet50_model
 import segmentation_models_pytorch as smp
 import argparse
+from utils.earlyStopping import EarlyStopping
 
 train_transform = transforms.Compose([
     # Existing transformations
@@ -127,11 +128,13 @@ def loop(model, loader, criterion, optimizer, device, phase="training"):
         recall = total_TP / (total_TP + total_FN) if (total_TP + total_FP) > 0 else 0
         f1_score = 2 * precision * recall / (precision + recall) if (precision + recall) > 0 else 0
         iou = total_TP / (total_TP + total_FP + total_FN) if (total_TP + total_FP + total_FN) > 0 else 0
+        dice = 2 * total_TP / (2 * total_TP + total_FP + total_FN) if (2 * total_TP + total_FP + total_FN) > 0 else 0
     
     avg_loss = total_loss / len(loader.dataset)
 
     metrics = {
         'iou': iou,
+        'dice': dice,
         'avg_loss': avg_loss,
         'accuracy': accuracy, 
         'precision': precision,
@@ -142,6 +145,8 @@ def loop(model, loader, criterion, optimizer, device, phase="training"):
     return {key: round(value, 4) for key, value in metrics.items()}
 
 def main():
+    early_stopping = EarlyStopping(patience=10, verbose=True)  # Setting patience to 10 for example
+
     # Check if GPU is available
     print("is cuda available?:", torch.cuda.is_available())
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -216,6 +221,11 @@ def main():
             # torch.save(model.state_dict(), model_path)
             # print("------- Saved best model ---------")
         
+        early_stopping(val_metrics['avg_loss'])
+        if early_stopping.early_stop:
+            print("Early stopping")
+            break
+        
     print(f"time spent training the {model_name} NN {int(minutes)}:{int(seconds)}")
 
     for key in config['Model']:
@@ -252,4 +262,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
