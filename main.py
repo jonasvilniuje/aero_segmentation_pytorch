@@ -44,12 +44,14 @@ config.read('env.config')
 train_root = config['Paths']['train_root']
 val_root = config['Paths']['val_root']
 test_root = config['Paths']['test_root']
+early_stopping_enabled = config['Model']['early_stopping_enabled']
 fixed_train_size = args.fixed_train_size if args.fixed_train_size else int(config['Model']['fixed_train_size'])
 fixed_valid_size = args.fixed_valid_size if args.fixed_valid_size else int(config['Model']['fixed_valid_size'])
 fixed_test_size = args.fixed_test_size if args.fixed_test_size else int(config['Model']['fixed_test_size'])
 batch_size = args.batch_size if args.batch_size else int(config['Model']['batch_size'])
 num_epochs = args.num_epochs if args.num_epochs else int(config['Model']['num_epochs'])
 model_name =  args.model_name if args.model_name else config['Model']['name']
+
 
 save_path = create_folder_for_results(f'{model_name}_{fixed_train_size}_{num_epochs}E_{batch_size}B')
 print(f"save_path: {save_path}")
@@ -215,20 +217,27 @@ def main():
             print(f"Validation loss improved from {best_val_loss} to {val_loss}")
 
             best_val_loss = val_loss # should save best val_loss to csv
-            best_epoch = epoch
 
-            model_save_path = create_folder_for_results(f'{model_name}_{fixed_train_size}_{best_epoch}E_{batch_size}B')
+
             # # currently not in use for experiments
             # model_config = f'{model_name}_{fixed_train_size}_{num_epochs}E_{batch_size}B'
             # model_path =f'results/{model_config}/{model_config}_best_model.pth'
             # create_folder_for_results(model_config)
             # torch.save(model.state_dict(), model_path)
             # print("------- Saved best model ---------")
-        
-        early_stopping(val_metrics['avg_loss'])
-        if early_stopping.early_stop:
-            print("Early stopping")
-            break
+
+        if early_stopping_enabled:
+            early_stopping(val_metrics['avg_loss'])
+            best_epoch = epoch
+
+            model_config = f'{model_name}_{fixed_train_size}_{best_epoch}E_{batch_size}B'
+            model_save_path = create_folder_for_results(f'{model_config}')
+            model_save_path = f'{model_save_path}/{model_config}_best_model.pth'
+            torch.save(model.state_dict(), model_save_path)
+
+            if early_stopping.early_stop:
+                print("Early stopping")
+                break
         
     print(f"time spent training the {model_name} NN {int(minutes)}:{int(seconds)}")
 
