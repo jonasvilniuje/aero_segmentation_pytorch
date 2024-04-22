@@ -226,18 +226,18 @@ def main():
             # torch.save(model.state_dict(), model_path)
             # print("------- Saved best model ---------")
 
-        if early_stopping_enabled:
-            early_stopping(val_metrics['avg_loss'])
-            best_epoch = epoch
+        # if early_stopping_enabled:
+        #     early_stopping(val_metrics['avg_loss'])
+        #     best_epoch = epoch
 
-            model_config = f'{model_name}_{fixed_train_size}_{best_epoch}E_{batch_size}B'
-            model_save_path = create_folder_for_results(f'{model_config}')
-            model_save_path = f'{model_save_path}/{model_config}_best_model.pth'
-            torch.save(model.state_dict(), model_save_path)
+        #     model_config = f'{model_name}_{fixed_train_size}_{best_epoch}E_{batch_size}B'
+        #     model_save_path = create_folder_for_results(f'{model_config}')
+        #     model_save_path = f'{model_save_path}/{model_config}_best_model.pth'
+        #     torch.save(model.state_dict(), model_save_path)
 
-            if early_stopping.early_stop:
-                print("Early stopping")
-                break
+        #     if early_stopping.early_stop:
+        #         print("Early stopping")
+        #         break
         
     print(f"time spent training the {model_name} NN {int(minutes)}:{int(seconds)}")
 
