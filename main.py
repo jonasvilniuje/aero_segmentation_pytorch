@@ -13,6 +13,10 @@ from models.deeplabv3_resnet50 import init_deeplabv3_resnet50_model
 import segmentation_models_pytorch as smp
 import argparse
 from utils.earlyStopping import EarlyStopping
+import torch.backends.cudnn
+
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = True
 
 train_transform = transforms.Compose([
     # Existing transformations
