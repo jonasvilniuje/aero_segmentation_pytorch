@@ -74,7 +74,7 @@ print(f"num_epochs: {num_epochs}")
 print(f'is earlyStop enabled? {early_stopping_enabled}')
 
 def init_data():
-    # torch.manual_seed(0) # to reproduce the same results (avoid random img selection)
+    torch.manual_seed(0) # to reproduce the same results (avoid random img selection)
     # Define data loaders for training and testing
     train_dataset = CustomImageFolder(train_root, transform=eval_transform, fixed_size=fixed_train_size)
     val_dataset = CustomImageFolder(val_root, transform=eval_transform, fixed_size=fixed_valid_size)
@@ -131,10 +131,6 @@ def loop(model, loader, criterion, optimizer, device, phase="training"):
             total_FN += FN
 
             if phase == "testing":
-                
-                # model_weights = torch.load(f'saved_models/{model_config}/{model_config}_best_model.pth')
-                # model.load_state_dict(model_weights)
-
 
                 visualize_batch(images, masks, outputs, save_path)
                 # iterate through imgs, masks and outputs to plot them
@@ -262,6 +258,9 @@ def main():
     if best_model_weights is not None:
         print('loading best saved weights...')
         model.load_state_dict(best_model_weights)
+                
+        # model_weights = torch.load(f'saved_models/{model_config}/{model_config}_best_model.pth')
+        # model.load_state_dict(model_weights)
 
     # Test the model
     test_metrics = loop(model, test_loader, criterion, None, device, phase="testing")
