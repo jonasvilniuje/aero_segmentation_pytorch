@@ -138,10 +138,6 @@ def loop(model, loader, criterion, optimizer, device, phase="training"):
                 # model_weights = torch.load(f'saved_models/{model_config}/{model_config}_best_model.pth')
                 # model.load_state_dict(model_weights)
 
-                    
-                ####### Load the best checkpoint
-                if best_model_weights is not None:
-                    model.load_state_dict(best_model_weights)
 
                 visualize_batch(images, masks, outputs, save_path)
                 # iterate through imgs, masks and outputs to plot them
@@ -265,6 +261,9 @@ def main():
     save_results_to_csv(metrics['train'], save_path, 'train')
     save_results_to_csv(metrics['val'], save_path, 'val')
 
+    ####### Load the best checkpoint
+    if best_model_weights is not None:
+        model.load_state_dict(best_model_weights)
     # Test the model
     test_metrics = loop(model, test_loader, criterion, None, device, phase="testing")
 
