@@ -43,6 +43,9 @@ u-net_baseline, 5000, 32
 u-net_baseline, 5000, 64
 u-net_baseline, 5000, 128
 
+lyginti ką?
+
+
 
 non-deterministic:
 ??

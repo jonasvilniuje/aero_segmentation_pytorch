@@ -64,7 +64,7 @@ if early_stopping_enabled:
     model_save_path = f'saved_models/{model_config}/{model_config}_best_model.pth'
     create_folder_for_results(f'saved_models/{model_config}')
 
-states = [] # array to save best model weights
+best_model_weights = {}
 
 print(f"save_path: {save_path}")
 
@@ -135,8 +135,14 @@ def loop(model, loader, criterion, optimizer, device, phase="training"):
             if phase == "testing":
                 print('loading best saved weights...')
                 
-                model_weights = torch.load(f'saved_models/{model_config}/{model_config}_best_model.pth')
-                model.load_state_dict(model_weights)
+                # model_weights = torch.load(f'saved_models/{model_config}/{model_config}_best_model.pth')
+                # model.load_state_dict(model_weights)
+
+                    
+                ####### Load the best checkpoint
+                if best_model_weights is not None:
+                    model.load_state_dict(best_model_weights)
+
                 visualize_batch(images, masks, outputs, save_path)
                 # iterate through imgs, masks and outputs to plot them
                 # for i in range(0, len(outputs)):
@@ -207,7 +213,6 @@ def main():
     start_time = time.time()  # Start timer for whole NN learning phase
     best_val_loss = float('inf') # For best model results tracking
     best_epoch = 0
-    best_model_weights = {}
 
     for epoch in range(num_epochs):
         print(f"Epoch {epoch+1}/{num_epochs}")
@@ -236,10 +241,10 @@ def main():
 
             best_val_loss = val_loss # should save best val_loss to csv
 
-            if early_stopping_enabled == True:
+            if early_stopping_enabled:
                 early_stopping(val_metrics['avg_loss'])
 
-                best_model_weights = model.state_dict()
+                best_model_weights = model.state_dict().copy()
                 best_epoch = epoch
 
                 torch.save(model.state_dict(), model_save_path)
@@ -248,7 +253,7 @@ def main():
                     print("Early stopping")
                     break
         
-    print(f"time spent training the {model_name} NN {int(minutes)}:{int(seconds)}")
+    print(f"time spent training the {model_name} NN {formatted_time}")
     print(f'best epoch: {best_epoch}')
 
     for key in config['Model']:
@@ -259,9 +264,7 @@ def main():
     
     save_results_to_csv(metrics['train'], save_path, 'train')
     save_results_to_csv(metrics['val'], save_path, 'val')
-    
-    # Load the best checkpoint
-    torch.load(best_model_weights)
+
     # Test the model
     test_metrics = loop(model, test_loader, criterion, None, device, phase="testing")
 
