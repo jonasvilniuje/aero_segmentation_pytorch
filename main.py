@@ -206,7 +206,7 @@ def main():
     start_time = time.time()  # Start timer for whole NN learning phase
     best_val_loss = float('inf') # For best model results tracking
     best_epoch = 0
-    best_model_weights = {}
+    best_model_weights = None
 
     for epoch in range(num_epochs):
         print(f"Epoch {epoch+1}/{num_epochs}")
@@ -258,11 +258,11 @@ def main():
     
     save_results_to_csv(metrics['train'], save_path, 'train')
     save_results_to_csv(metrics['val'], save_path, 'val')
-
-    ####### Load the best checkpoint
-    print('loading best saved weights...')
+    
     if best_model_weights is not None:
+        print('loading best saved weights...')
         model.load_state_dict(best_model_weights)
+
     # Test the model
     test_metrics = loop(model, test_loader, criterion, None, device, phase="testing")
 
