@@ -23,7 +23,7 @@ def create_folder_for_results(folder_name=None):
     if folder_name is None:
         folder_name = get_folder_name()
     
-    save_path = f'results/{folder_name}'
+    save_path = f'{folder_name}'
 
     os.makedirs(save_path, exist_ok=True)
 

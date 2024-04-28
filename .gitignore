@@ -7,3 +7,4 @@ airbus-vessel-recognition
 env.config
 results
 hpc_results
+saved_models

@@ -19,8 +19,51 @@ Tokiu būdu galima paleisti mokymasi
 1.1 po to galima išsirinkti tiksliausią modelį ir po to eksperimentuoti su juo
 
 2. ieškoti galima balanso tarp laiko, tikslumo ir duomenų kiekio
-2.1 nubraižyti bar chartus:
+2.1 nubraižyti chartus:
  iou nuo duomenų kiekio prikausomybę
+ laiko nuo duomenu
+ iou nuo batch_size
+ SKIRINGIEMS modeliams
+
+analizuoti:
+kaip duomenu/batch_size kiekis įtakoja modelio apmokymo rezultatus ir kiek laiko užtrunka
+
+tam reikia paleisti eksperimentus:
+kiekvieną modelį (?, juk visi U-net pagrindu) su X kiekiu duomenų ir Y batch_size dydžiu.
+deterministic:
+u-net_baseline, 1000, 8
+u-net_baseline, 1000, 16
+u-net_baseline, 1000, 32
+u-net_baseline, 1000, 64
+u-net_baseline, 1000, 128
+
+u-net_baseline, 5000, 8
+u-net_baseline, 5000, 16
+u-net_baseline, 5000, 32
+u-net_baseline, 5000, 64
+u-net_baseline, 5000, 128
+
+
+non-deterministic:
+??
+
+
+iliustracijai galima paimti mask ir predicted mask ir parodyt IOU, paskaičiuoti IOU
+
+--------------
+atsitiktinumas:
+--------------
+problematika - skirtingi rezultatai su tais pačiais inputs
+atkartojamumo sprendimo būdai - pliusai minusai vs 10 apmokymo vidurkio radimas
+
+parodyti kokią įtaką turi mokymo atsitiktinumas galutiniam rezultatui
+
+pagrįsti pasirinkimus: modelių (efficientnet-b1, resnet34), loss funkcijos
+
+
+
+https://pytorch.org/docs/stable/notes/randomness.html
+https://pytorch.org/docs/stable/data.html#torch.utils.data.get_worker_info
  
 eksperimentai:
 modeliai:
@@ -30,9 +73,63 @@ u-net + efficientnet encoder + pretrained weights
 ...
 
 prioritetai:
-tvarkingai saugoti duomnenis - modelis, duomenu kiekis, config, gautos metrikos, tam kad po to braižyti grafikus ir lyginti rezultatus, ieškoti dėsningumo
-
+tvarkingai saugoti duomenis - modelis, duomenu kiekis, config, gautos metrikos, tam kad po to braižyti grafikus ir lyginti rezultatus, ieškoti dėsningumo
 pabandyti naudoti bibliotekų modelius +
+
+______________
+REZULTATAI:
+--------------
+
+Tyrimo pastebėta, kad naudojant tuos pačius modelius, duomenis ir hiperparametrus modelio apmokymo rezultatai skiriasi. Toks reiškinys vyksta todėl, kad PyTorch giliojo mokymo biblioteka naudoja CUDA biblioteką, kuri naudoja nedeterministinius algoritmus, leidžiančius pagreitinti modelio apmokymą, tačiau jų panaudojimas gali lemti ir skirtingus rezultatus. Norint užtikrinti, kad tyrimo rezultatai būtų kuo mažiau paveikti atsitiktinumo, yra svarbu, kad su vienoda įvestimi būtų pasiekiama vienoda išvestis. Todėl PyTorch parametrui torch.backends.cudnn.deterministic buvo priskirta False reikšmė, kuri leido pasiekti modelio apmokymo rezultatų pakartojamumą. 
+
+HPC APLINKOJE:
+Testiniai rezultatai prieš ir po nustatant torch.backends.cudnn.deterministic = True & # torch.backends.cudnn.benchmark = False.
+
+Prieš:
+model_name,time,epochs,parameter_count,fixed_train_size,fixed_valid_size,fixed_test_size,batch_size,training_time,iou,avg_loss,accuracy,precision,recall,f1_score
+unet_baseline,10:16,50,1928417,1000,1000,1000,32,10:16,0.5909,0.7429,0.0251,0.9972,0.6604,0.8489
+unet_baseline,10:00,50,1928417,1000,1000,1000,32,10:00,0.5799,0.7341,0.0265,0.9972,0.6717,0.8092
+unet_baseline,10:41,50,1928417,1000,1000,1000,32,10:41,0.4153,0.5869,0.031,0.9938,0.4275,0.9357
+unet_baseline,10:42,50,1928417,1000,1000,1000,32,10:42,0.5857,0.7387,0.0295,0.9973,0.6885,0.7968
+unet_baseline,10:40,50,1928417,1000,1000,1000,32,10:40,0.6358,0.7774,0.0266,0.9977,0.7177,0.8478
+unet_baseline,10:36,50,1928417,1000,1000,1000,32,10:36,0.6341,0.7761,0.0195,0.9977,0.7123,0.8525
+unet_baseline,10:27,50,1928417,1000,1000,1000,32,10:27,0.5907,0.7427,0.0222,0.9972,0.653,0.861
+unet_baseline,10:17,50,1928417,1000,1000,1000,32,10:17,0.5381,0.6997,0.0234,0.9962,0.5542,0.9487
+unet_baseline,10:23,50,1928417,1000,1000,1000,32,10:23,0.6486,0.0243,0.9979,0.7544,0.8222,0.7868
+unet_baseline,10:25,50,1928417,1000,1000,1000,32,10:25,0.5833,0.0561,0.9976,0.7501,0.7239,0.7368
+unet_baseline,10:06,50,1928417,1000,1000,1000,32,10:06,0.5119,0.0419,0.9963,0.602,0.7737,0.6772
+unet_baseline,10:03,50,1928417,1000,1000,1000,32,10:03,0.5196,0.0419,0.9964,0.6148,0.7703,0.6838
+unet_baseline,10:07,50,1928417,1000,1000,1000,32,10:07,0.5318,0.044,0.9967,0.6443,0.7528,0.6943
+
+Po:
+unet_baseline,10:43,50,1928417,1000,1000,1000,32,10:43,0.5277,0.0514,0.9968,0.6753,0.707,0.6908
+unet_baseline,10:43,50,1928417,1000,1000,1000,32,10:43,0.5277,0.0514,0.9968,0.6753,0.707,0.6908
+unet_baseline,11:11,50,1928417,1000,1000,1000,32,11:11,0.5347,0.0388,0.9967,0.6485,0.753,0.6968
+unet_baseline,10:43,50,1928417,1000,1000,1000,32,10:43,0.5347,0.0388,0.9967,0.6485,0.753,0.6968
+unet_baseline,10:46,50,1928417,1000,1000,1000,32,10:46,0.5497,0.0397,0.9967,0.6403,0.7952,0.7094
+unet_baseline,10:48,50,1928417,1000,1000,1000,32,10:48,0.5497,0.0397,0.9967,0.6403,0.7952,0.7094
+unet_baseline,11:11,50,1928417,1000,1000,1000,32,11:11,0.4663,0.0435,0.9956,0.5389,0.7757,0.636
+unet_baseline,11:16,50,1928417,1000,1000,1000,32,11:16,0.4663,0.0435,0.9956,0.5389,0.7757,0.636
+unet_baseline,11:17,50,1928417,1000,1000,1000,32,11:17,0.4663,0.0435,0.9956,0.5389,0.7757,0.636
+
+HPC aplinkoje pasiekti stabilaus rezultatų pakartojamumo nepavyko - iou metrika svyruoja tarp 0.4663 ir 0.5497. (regis kad ir pavyko)
+
+LOKALIOJE KOMPIURTERIO APLINKOJE:
+Lokalioje aplinkoje kodas buvo leidžiamas naudojant CPU resursus. Šių bandymų metu pavyko pasiekti rezultatų atkartojamumą panaudojus tik torch.manualSeed() funkciją, kuri leidžia kontroliuoti atsitiktinių skaičių generavimą, kuris naudojamas batch elementų parinkimui.
+
+unet_baseline,1:27,1,1928417,128,128,128,8,1:27,0.003,0.3438,0.9921,0.0057,0.0064,0.006
+unet_baseline,1:46,1,1928417,128,128,128,8,1:46,0.003,0.3438,0.9921,0.0057,0.0064,0.006
+unet_baseline,1:36,1,1928417,128,128,128,8,1:36,0.003,0.3438,0.9921,0.0057,0.0064,0.006
+unet_baseline,4:48,3,1928417,128,128,128,8,4:48,0.0025,0.2167,0.9962,0.0776,0.0026,0.0049
+unet_baseline,4:54,3,1928417,128,128,128,8,4:54,0.0025,0.2167,0.9962,0.0776,0.0026,0.0049
+unet_baseline,4:36,3,1928417,128,128,128,8,4:36,0.0025,0.2167,0.9962,0.0776,0.0026,0.0049
+
+
+
+
+
+
+
 
 pabandyti deeplabv3 su 40k imgs - in progress - fail, 
 pabandyti deeplabv3 su 10k imgs:
@@ -145,11 +242,11 @@ pabandyti kitus modelius - ?
     fixed_test_size: 100
     test_metrics: {'iou': 0.3999087334075993, 'avg_loss': 0.06389929056167602, 'precision': 0.4059677089720008, 'recall': 0.9640222596091627, 'f1_score': 0.5713354361811261}
 
-    ------------------------------------efficientUNet_model---------------------------------------------------------------------------------
-    time spent training the efficientUNet_model NN 3:49
+    ------------------------------------UNet_model---------------------------------------------------------------------------------
+    time spent training the UNet_model NN 3:49
     Total number of trainable parameters: 1928417
     Total number of parameters (including non-trainable): 1928417
-    name: efficientUNet_model
+    name: UNet_model
     batch_size: 16
     num_epochs: 25
     fixed_train_size: 1000
@@ -157,11 +254,11 @@ pabandyti kitus modelius - ?
     fixed_test_size: 1000
     test_metrics: {'iou': 0.3780880703733235, 'avg_loss': 0.08107823789119721, 'accuracy': 0.9926805114746093, 'precision': 0.38684238452763114, 'recall': 0.9435259479746344, 'f1_score': 0.5487139443430485}
     
-    time spent training the efficientUNet_model NN 3:31
+    time spent training the UNet_model NN 3:31
     Total number of trainable parameters: 1928417
     Total number of parameters (including non-trainable): 1928417
     None
-    name: efficientUNet_model
+    name: UNet_model
     batch_size: 32
     num_epochs: 25
     fixed_train_size: 1000
@@ -171,7 +268,7 @@ pabandyti kitus modelius - ?
 
     Total number of trainable parameters: 1928417
     Total number of parameters (including non-trainable): 1928417
-    name: efficientUNet_model
+    name: UNet_model
     batch_size: 64
     num_epochs: 25
     fixed_train_size: 1000
@@ -179,10 +276,10 @@ pabandyti kitus modelius - ?
     fixed_test_size: 1000
     test_metrics: {'iou': 0.262050331080238, 'avg_loss': 0.09773539990186692, 'accuracy': 0.9869144439697266, 'precision': 0.26308037199096374, 'recall': 0.9852788921961951, 'f1_score': 0.4152771480293325}
 
-    time spent training the efficientUNet_model NN 3:37
+    time spent training the UNet_model NN 3:37
     Total number of trainable parameters: 1928417
     Total number of parameters (including non-trainable): 1928417
-    name: efficientUNet_model
+    name: UNet_model
     batch_size: 128
     num_epochs: 25
     fixed_train_size: 1000
@@ -319,7 +416,7 @@ bash komandos:
 
 scp deeplabv3_resnet50.zip jobr4333@uosis.mif.vu.lt:/stud3/2017/jobr4333/
 scp jobr4333@uosis.mif.vu.lt:/stud3/2017/jobr4333/deeplabv3_resnet50.zip /c/Users/master/Documents
-scp jobr4333@uosis.mif.vu.lt:/stud3/2017/jobr4333best_model_weights.pth /c/Users/master/Documents
+scp jobr4333@uosis.mif.vu.lt:/stud3/2017/jobr4333/best_model_weights.pth /c/Users/master/Documents
 sacct -j 30901 --format=JobID,Start,End
 cat "$(ls -1t | grep 'slurm-[0-9]\{5\}\.out' | head -n 1)"
 find results -type f ! -name '*.pth' -print0 | zip -0 hpc_results.zip -

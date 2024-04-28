@@ -16,7 +16,7 @@ from utils.earlyStopping import EarlyStopping
 import torch.backends.cudnn
 
 torch.backends.cudnn.deterministic = True
-torch.backends.cudnn.benchmark = True
+torch.backends.cudnn.benchmark = False
 
 train_transform = transforms.Compose([
     # Existing transformations
@@ -56,8 +56,15 @@ batch_size = args.batch_size if args.batch_size else int(config['Model']['batch_
 num_epochs = args.num_epochs if args.num_epochs else int(config['Model']['num_epochs'])
 model_name =  args.model_name if args.model_name else config['Model']['name']
 
+model_config = f'{model_name}_{fixed_train_size}_{num_epochs}E_{batch_size}B'
+save_path = create_folder_for_results(f'results/{model_name}_{fixed_train_size}_{num_epochs}E_{batch_size}B')
 
-save_path = create_folder_for_results(f'{model_name}_{fixed_train_size}_{num_epochs}E_{batch_size}B')
+if early_stopping_enabled:
+    model_config = f'{model_name}_{fixed_train_size}_{num_epochs}E_{batch_size}B'
+    model_save_path = f'saved_models/{model_config}/{model_config}_best_model.pth'
+
+states = [] # array to save best model weights
+
 print(f"save_path: {save_path}")
 
 print(f"fixed_train_size: {fixed_train_size}")
@@ -65,9 +72,10 @@ print(f"fixed_valid_size: {fixed_valid_size}")
 print(f"fixed_test_size: {fixed_test_size}")
 print(f"batch_size: {batch_size}")
 print(f"num_epochs: {num_epochs}")
+print(f'is earlyStop enabled? {early_stopping_enabled}')
 
 def init_data():
-    torch.manual_seed(0) # to reproduce the same results (avoid random img selection)
+    # torch.manual_seed(0) # to reproduce the same results (avoid random img selection)
     # Define data loaders for training and testing
     train_dataset = CustomImageFolder(train_root, transform=eval_transform, fixed_size=fixed_train_size)
     val_dataset = CustomImageFolder(val_root, transform=eval_transform, fixed_size=fixed_valid_size)
@@ -124,6 +132,10 @@ def loop(model, loader, criterion, optimizer, device, phase="training"):
             total_FN += FN
 
             if phase == "testing":
+                print('loading best saved weights...')
+                
+                model_weights = torch.load(f'saved_models/{model_config}/{model_config}_best_model.pth')
+                model.load_state_dict(model_weights)
                 visualize_batch(images, masks, outputs, save_path)
                 # iterate through imgs, masks and outputs to plot them
                 # for i in range(0, len(outputs)):
@@ -141,12 +153,12 @@ def loop(model, loader, criterion, optimizer, device, phase="training"):
 
     metrics = {
         'iou': iou,
-        # 'dice': dice,
         'avg_loss': avg_loss,
         'accuracy': accuracy, 
         'precision': precision,
         'recall': recall,
-        'f1_score': f1_score
+        'f1_score': f1_score,
+        # 'dice': dice
     }
 
     return {key: round(value, 4) for key, value in metrics.items()}
@@ -194,6 +206,7 @@ def main():
     start_time = time.time()  # Start timer for whole NN learning phase
     best_val_loss = float('inf') # For best model results tracking
     best_epoch = 0
+    best_model_weights = {}
 
     for epoch in range(num_epochs):
         print(f"Epoch {epoch+1}/{num_epochs}")
@@ -222,28 +235,20 @@ def main():
 
             best_val_loss = val_loss # should save best val_loss to csv
 
+            if early_stopping_enabled:
+                early_stopping(val_metrics['avg_loss'])
 
-            # # currently not in use for experiments
-            # model_config = f'{model_name}_{fixed_train_size}_{num_epochs}E_{batch_size}B'
-            # model_path =f'results/{model_config}/{model_config}_best_model.pth'
-            # create_folder_for_results(model_config)
-            # torch.save(model.state_dict(), model_path)
-            # print("------- Saved best model ---------")
+                best_model_weights = model.state_dict()
+                best_epoch = epoch
 
-        # if early_stopping_enabled:
-        #     early_stopping(val_metrics['avg_loss'])
-        #     best_epoch = epoch
+                torch.save(model.state_dict(), model_save_path)
 
-        #     model_config = f'{model_name}_{fixed_train_size}_{best_epoch}E_{batch_size}B'
-        #     model_save_path = create_folder_for_results(f'{model_config}')
-        #     model_save_path = f'{model_save_path}/{model_config}_best_model.pth'
-        #     torch.save(model.state_dict(), model_save_path)
-
-        #     if early_stopping.early_stop:
-        #         print("Early stopping")
-        #         break
+                if early_stopping.early_stop:
+                    print("Early stopping")
+                    break
         
     print(f"time spent training the {model_name} NN {int(minutes)}:{int(seconds)}")
+    print(f'best epoch: {best_epoch}')
 
     for key in config['Model']:
         print(f'{key}: {config["Model"][key]}')
@@ -254,6 +259,8 @@ def main():
     save_results_to_csv(metrics['train'], save_path, 'train')
     save_results_to_csv(metrics['val'], save_path, 'val')
     
+    # Load the best checkpoint
+    torch.load(best_model_weights)
     # Test the model
     test_metrics = loop(model, test_loader, criterion, None, device, phase="testing")
 
