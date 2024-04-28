@@ -48,7 +48,7 @@ config.read('env.config')
 train_root = config['Paths']['train_root']
 val_root = config['Paths']['val_root']
 test_root = config['Paths']['test_root']
-early_stopping_enabled = config['Model']['early_stopping_enabled']
+early_stopping_enabled = config['Model']['early_stopping_enabled'].strip().lower() == 'true'
 fixed_train_size = args.fixed_train_size if args.fixed_train_size else int(config['Model']['fixed_train_size'])
 fixed_valid_size = args.fixed_valid_size if args.fixed_valid_size else int(config['Model']['fixed_valid_size'])
 fixed_test_size = args.fixed_test_size if args.fixed_test_size else int(config['Model']['fixed_test_size'])
@@ -62,6 +62,7 @@ save_path = create_folder_for_results(f'results/{model_name}_{fixed_train_size}_
 if early_stopping_enabled:
     model_config = f'{model_name}_{fixed_train_size}_{num_epochs}E_{batch_size}B'
     model_save_path = f'saved_models/{model_config}/{model_config}_best_model.pth'
+    create_folder_for_results(f'saved_models/{model_config}')
 
 states = [] # array to save best model weights
 
