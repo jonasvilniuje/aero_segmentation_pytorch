@@ -235,7 +235,7 @@ def main():
 
             best_val_loss = val_loss # should save best val_loss to csv
 
-            if early_stopping_enabled:
+            if early_stopping_enabled == True:
                 early_stopping(val_metrics['avg_loss'])
 
                 best_model_weights = model.state_dict()
