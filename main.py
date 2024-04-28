@@ -64,8 +64,6 @@ if early_stopping_enabled:
     model_save_path = f'saved_models/{model_config}/{model_config}_best_model.pth'
     create_folder_for_results(f'saved_models/{model_config}')
 
-best_model_weights = {}
-
 print(f"save_path: {save_path}")
 
 print(f"fixed_train_size: {fixed_train_size}")
@@ -133,7 +131,6 @@ def loop(model, loader, criterion, optimizer, device, phase="training"):
             total_FN += FN
 
             if phase == "testing":
-                print('loading best saved weights...')
                 
                 # model_weights = torch.load(f'saved_models/{model_config}/{model_config}_best_model.pth')
                 # model.load_state_dict(model_weights)
@@ -209,6 +206,7 @@ def main():
     start_time = time.time()  # Start timer for whole NN learning phase
     best_val_loss = float('inf') # For best model results tracking
     best_epoch = 0
+    best_model_weights = {}
 
     for epoch in range(num_epochs):
         print(f"Epoch {epoch+1}/{num_epochs}")
@@ -262,6 +260,7 @@ def main():
     save_results_to_csv(metrics['val'], save_path, 'val')
 
     ####### Load the best checkpoint
+    print('loading best saved weights...')
     if best_model_weights is not None:
         model.load_state_dict(best_model_weights)
     # Test the model
