@@ -63,7 +63,9 @@ parodyti kokią įtaką turi mokymo atsitiktinumas galutiniam rezultatui
 
 pagrįsti pasirinkimus: modelių (efficientnet-b1, resnet34), loss funkcijos
 
-
+MAP metrika!!! iou threshold tarkim 0.5 (testavimo metu skaičiuoti). motyvacija - nebūtinai mažesnis IoU yra blogas rezultatas, nes svarbiausia yra atpažinti laivą, o ne jį idealiai susegmentuoti.
+prie kranto esantiems laivams gal ir didesnio threshold reiktų, bet jūroje tai gerai
+gal eksperimentuoti 1000 AUGMENTED imgs vs 5000 imgs, kiekis vs augmentacija?
 
 https://pytorch.org/docs/stable/notes/randomness.html
 https://pytorch.org/docs/stable/data.html#torch.utils.data.get_worker_info

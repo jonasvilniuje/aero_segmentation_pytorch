@@ -5,15 +5,17 @@ from torch.utils.data import DataLoader
 from torchvision import transforms
 import configparser
 import time
+import segmentation_models_pytorch as smp
+import argparse
+import torch.backends.cudnn
+
 from utils.dataLoading import CustomImageFolder
 from utils.visualization import visualize_batch, plot_metrics, create_folder_for_results, append_results_to_csv, save_results_to_csv
 from models.unet import init_unet_model
 from models.unet_colab import init_unet_model_colab
 from models.deeplabv3_resnet50 import init_deeplabv3_resnet50_model
-import segmentation_models_pytorch as smp
-import argparse
+from utils.lossFunctions import dice, focal
 from utils.earlyStopping import EarlyStopping
-import torch.backends.cudnn
 
 torch.backends.cudnn.deterministic = True
 torch.backends.cudnn.benchmark = False
@@ -28,6 +30,7 @@ train_transform = transforms.Compose([
     transforms.RandomRotation(degrees=45),  # Random rotations
     transforms.ColorJitter(brightness=0.2, contrast=0.2),  # Adjust brightness and contrast
 ])
+
 eval_transform = transforms.Compose([
     transforms.ToTensor()
 ])
@@ -55,6 +58,7 @@ fixed_test_size = args.fixed_test_size if args.fixed_test_size else int(config['
 batch_size = args.batch_size if args.batch_size else int(config['Model']['batch_size'])
 num_epochs = args.num_epochs if args.num_epochs else int(config['Model']['num_epochs'])
 model_name =  args.model_name if args.model_name else config['Model']['name']
+loss_fn =  args.model_name if args.model_name else config['Model']['loss_fn']
 
 model_config = f'{model_name}_{fixed_train_size}_{num_epochs}E_{batch_size}B'
 save_path = create_folder_for_results(f'results/{model_name}_{fixed_train_size}_{num_epochs}E_{batch_size}B')
@@ -191,7 +195,13 @@ def main():
     pos_weight = torch.tensor([pos_weight_value])
     pos_weight = pos_weight.to(device)
 
-    criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+    if loss_fn == 'dice':
+        criterion = dice
+    elif loss_fn == 'focal':
+        criterion = focal
+    else:
+        criterion = nn.BCEWithLogitsLoss(pos_weight=pos_weight)
+
     optimizer = optim.Adam(model.parameters(), lr=0.001)
 
     metrics = {

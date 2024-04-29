@@ -24,11 +24,14 @@ class UNet(nn.Module):
         self.dconv_down1 = conv_block(3, 32)
         self.dconv_down2 = conv_block(32, 64)
         self.dconv_down3 = conv_block(64, 128)
+        self.dconv_down4 = conv_block(128, 256) 
         
         self.maxpool = nn.MaxPool2d(2)
-        self.bottleneck = conv_block(128, 256, use_dropout=True)
+        self.bottleneck = conv_block(256, 512, use_dropout=True)
         
         # Upsampling path
+        self.upsample4 = nn.ConvTranspose2d(512, 256, kernel_size=2, stride=2)
+        self.dconv_up4 = conv_block(512, 256)
         self.upsample3 = nn.ConvTranspose2d(256, 128, kernel_size=2, stride=2)
         self.dconv_up3 = conv_block(256, 128)
         self.upsample2 = nn.ConvTranspose2d(128, 64, kernel_size=2, stride=2)
@@ -49,10 +52,17 @@ class UNet(nn.Module):
         conv3 = self.dconv_down3(x)
         x = self.maxpool(conv3)
         
+        conv4 = self.dconv_down4(x)
+        x = self.maxpool(conv4)
+        
         # Bottleneck
         x = self.bottleneck(x)
         
         # Upsampling
+        x = self.upsample4(x)
+        x = torch.cat([x, conv4], dim=1)
+        x = self.dconv_up4(x)
+
         x = self.upsample3(x)
         x = torch.cat([x, conv3], dim=1)
         x = self.dconv_up3(x)
