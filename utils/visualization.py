@@ -32,7 +32,11 @@ def create_folder_for_results(folder_name=None):
 global batch_visualization_counter
 batch_visualization_counter = 0
 
-def visualize_batch(images, ground_truths, segmentation_masks, save_path=".", img_limit=7, batch_limit=3):
+import numpy as np
+import matplotlib.pyplot as plt
+import os
+
+def visualize_batch(images, ground_truths, segmentation_masks, save_path=".", img_limit=5, batch_limit=5):
     """Visualize images, ground truths, and masks for a batch."""
     global batch_visualization_counter
     batch_visualization_counter += 1
@@ -42,7 +46,7 @@ def visualize_batch(images, ground_truths, segmentation_masks, save_path=".", im
     num_images = min(images.shape[0], img_limit)
     rows = num_images * 3  # 3 images per item: original, ground truth, predicted mask
     
-    plt.figure(figsize=(12, rows * 2))
+    plt.figure(figsize=(9, rows * 1))
     
     for i in range(num_images):
         # Original Image
@@ -60,16 +64,18 @@ def visualize_batch(images, ground_truths, segmentation_masks, save_path=".", im
         # Predicted Mask
         plt.subplot(num_images, 3, i*3 + 3)
         predicted_mask = (segmentation_masks[i] > 0.5).float()
-        plt.imshow(predicted_mask.detach().cpu().numpy().squeeze())
+        plt.imshow(predicted_mask.detach().cpu().numpy().squeeze(), cmap='gray')
         plt.title(f"Predicted Mask {i+1}")
         plt.axis('off')
 
+    # Adjust the spacing of the subplots
+    plt.subplots_adjust(hspace=0.2, wspace=0.05)  # hspace controls the vertical gap, wspace controls the horizontal gap
+
     # Save the figure with a unique filename based on the batch counter
     filename = os.path.join(save_path, f"batch_{batch_visualization_counter}_visualization.png")
-    plt.savefig(filename)
+    plt.savefig(filename, bbox_inches='tight')  # bbox_inches='tight' reduces the excess white space
     plt.close()
     print(f"Saved visualization for batch {batch_visualization_counter} to {filename}")
-
 
 def plot_metrics(metrics, metric_name, save_path, caption, show_only=False):
     plt.figure(figsize=(10, 5))
