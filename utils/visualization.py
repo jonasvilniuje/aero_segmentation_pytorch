@@ -32,7 +32,7 @@ def create_folder_for_results(folder_name=None):
 global batch_visualization_counter
 batch_visualization_counter = 0
 
-def visualize_batch(images, ground_truths, segmentation_masks, save_path=".", img_limit=5, batch_limit=3):
+def visualize_batch(images, ground_truths, segmentation_masks, save_path=".", img_limit=7, batch_limit=3):
     """Visualize images, ground truths, and masks for a batch."""
     global batch_visualization_counter
     batch_visualization_counter += 1

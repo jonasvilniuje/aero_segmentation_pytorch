@@ -58,7 +58,7 @@ fixed_test_size = args.fixed_test_size if args.fixed_test_size else int(config['
 batch_size = args.batch_size if args.batch_size else int(config['Model']['batch_size'])
 num_epochs = args.num_epochs if args.num_epochs else int(config['Model']['num_epochs'])
 model_name =  args.model_name if args.model_name else config['Model']['name']
-loss_fn =  args.model_name if args.model_name else config['Model']['loss_fn']
+loss_fn =  args.loss_fn if args.loss_fn else config['Model']['loss_fn']
 
 model_config = f'{model_name}_{fixed_train_size}_{num_epochs}E_{batch_size}B'
 save_path = create_folder_for_results(f'results/{model_name}_{fixed_train_size}_{num_epochs}E_{batch_size}B')
