@@ -168,6 +168,7 @@ def loop(model, loader, criterion, optimizer, device, phase="training"):
     return {key: round(value, 4) for key, value in metrics.items()}
 
 def main():
+    loss_fn =  args.loss_fn if args.loss_fn else config['Model']['loss_fn'] # THIS MF WORKS ONLY HERE, WHY??????????????????????
     early_stopping = EarlyStopping(patience=10, verbose=True)  # Setting patience to 10 for example
 
     # Check if GPU is available
@@ -198,6 +199,10 @@ def main():
     pos_weight_value = background_percentage / target_percentage
     pos_weight = torch.tensor([pos_weight_value])
     pos_weight = pos_weight.to(device)
+
+
+    print('main, early_stopping_enabled: ', early_stopping_enabled)
+    print('main, loss_fn: ', loss_fn)
 
     if loss_fn == 'dice':
         criterion = dice
