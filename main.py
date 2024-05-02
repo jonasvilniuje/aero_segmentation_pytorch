@@ -191,6 +191,9 @@ def main():
     else:
         model = init_unet_model(device)
     
+    # trying to improve speed - parallelize if count of gpu > 1
+    if torch.cuda.device_count() > 1:
+        model = torch.nn.DataParallel(model)
     model.to(device)
     
     # questionable approach
