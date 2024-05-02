@@ -43,6 +43,7 @@ parser.add_argument("--batch_size", type=int, default=0, help="batch_size")
 parser.add_argument("--num_epochs", type=int, default=0, help="num_epochs")
 parser.add_argument("--model_name", type=int, default=0, help="model_name")
 parser.add_argument("--loss_fn", type=str, default="", help="loss_fn")
+parser.add_argument("--custom_label", type=str, default="", help="custom_label")
 
 args = parser.parse_args()
 
@@ -60,14 +61,13 @@ batch_size = args.batch_size if args.batch_size else int(config['Model']['batch_
 num_epochs = args.num_epochs if args.num_epochs else int(config['Model']['num_epochs'])
 model_name =  args.model_name if args.model_name else config['Model']['name']
 loss_fn =  args.loss_fn if args.loss_fn else config['Model']['loss_fn']
-# custom_label = args.custom_label if args.custom_label else config['Model']['custom_label']
+custom_label = args.custom_label if args.custom_label else config['Model']['custom_label']
 
-# model_config = f'{model_name}_{fixed_train_size}_{num_epochs}E_{batch_size}B{custom_label}'
-model_config = f'{model_name}_{fixed_train_size}_{num_epochs}E_{batch_size}B'
-save_path = create_folder_for_results(f'results/{model_name}_{fixed_train_size}_{num_epochs}E_{batch_size}B')
+model_config = f'{model_name}_{fixed_train_size}_{num_epochs}E_{batch_size}B_{loss_fn}{custom_label}'
+# model_config = f'{model_name}_{fixed_train_size}_{num_epochs}E_{batch_size}B'
+save_path = create_folder_for_results(f'results/{model_config}')
 
 if early_stopping_enabled:
-    model_config = f'{model_name}_{fixed_train_size}_{num_epochs}E_{batch_size}B'
     model_save_path = f'saved_models/{model_config}/{model_config}_best_model.pth'
     create_folder_for_results(f'saved_models/{model_config}')
 
@@ -80,6 +80,7 @@ print(f"batch_size: {batch_size}")
 print(f"num_epochs: {num_epochs}")
 print(f'is earlyStop enabled? {early_stopping_enabled}')
 print(f'loss_fn: {loss_fn}')
+print(f'custom_label: {custom_label}')
 
 def init_data():
     torch.manual_seed(0) # to reproduce the same results (avoid random img selection)
